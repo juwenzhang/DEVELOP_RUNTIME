@@ -1,0 +1,241 @@
+# Buffer
+
+:::tip
+
+* https://nodejs.org/docs/latest/api/buffer.html
+
+* Buffer class is a subclass of Javascript' Unit8Array class.
+
+* While the Buffer class is available within the global scope, it is still recommended to explicitly reference it via an import or require statement.
+
+    * `虽然 Buffer 类在全局作用域中可用，但仍建议通过 import 或 require 语句显式引用它。`
+
+    * buffer 模块的核心目的就是对我们的数据进行十六进制转换的一个函数吧
+
+```javascript
+import { Buffer } from 'node:buffer';
+
+// Creates a zero-filled Buffer of length 10.
+const buf1 = Buffer.alloc(10);
+
+// Creates a Buffer of length 10,
+// filled with bytes which all have the value `1`.
+const buf2 = Buffer.alloc(10, 1);
+
+// Creates an uninitialized buffer of length 10.
+// This is faster than calling Buffer.alloc() but the returned
+// Buffer instance might contain old data that needs to be
+// overwritten using fill(), write(), or other functions that fill the Buffer's
+// contents.
+const buf3 = Buffer.allocUnsafe(10);
+
+// Creates a Buffer containing the bytes [1, 2, 3].
+const buf4 = Buffer.from([1, 2, 3]);
+
+// Creates a Buffer containing the bytes [1, 1, 1, 1] – the entries
+// are all truncated using `(value & 255)` to fit into the range 0–255.
+const buf5 = Buffer.from([257, 257.5, -255, '1']);
+
+// Creates a Buffer containing the UTF-8-encoded bytes for the string 'tést':
+// [0x74, 0xc3, 0xa9, 0x73, 0x74] (in hexadecimal notation)
+// [116, 195, 169, 115, 116] (in decimal notation)
+const buf6 = Buffer.from('tést');
+
+// Creates a Buffer containing the Latin-1 bytes [0x74, 0xe9, 0x73, 0x74].
+const buf7 = Buffer.from('tést', 'latin1');
+```
+
+:::
+
+## Basic Use Buffer
+
+:::note
+
+* 核心进行的是字符编码（charactor encoding）的操作，如果没有指定字符编码的话，默认使用的是就是：`UTF-8` 的国际通用字符编码格式吧
+
+```javascript
+import { Buffer } from 'node:buffer';
+
+const buf = Buffer.from('hello world', 'utf8');
+
+console.log(buf.toString('hex'));
+// Prints: 68656c6c6f20776f726c64
+console.log(buf.toString('base64'));
+// Prints: aGVsbG8gd29ybGQ=
+
+console.log(Buffer.from('fhqwhgads', 'utf8'));
+// Prints: <Buffer 66 68 71 77 68 67 61 64 73>
+console.log(Buffer.from('fhqwhgads', 'utf16le'));
+// Prints: <Buffer 66 00 68 00 71 00 77 00 68 00 67 00 61 00 64 00 73 00>
+```
+
+* Nodejs 可以执行的字符编码类型含有：
+
+    * `utf8`(alias: `utf-8`)：多字节编码的 Unicode 字符（`Multi-byte Encoding Unicode`）。许多网页和其他文档格式使用 `UTF-8`。这是默认的字符编码。当把一个 `Buffer` 解码为不包含有效 `UTF-8` 数据的字符串时，Unicode 替换字符 `U+FFFD` 会被用来表示这些错误。
+
+    * `utf16le`(alias: `utf-16le`)：多字节编码的 Unicode 字符。与 'utf8' 不同，字符串中的每个字符将使用 2 或 4 个字节进行编码。Node.js 仅支持 utf-16le 这种小端字节序的变体。
+
+        :::tip
+
+        * 字节序主要是分为两种：`小端字节序（little-endian）` 和 `大端字节序（big-endian）`
+
+            * 小端字节序（little-endian）: 低位字节（数据的 “小” 部分）存储在低内存地址，高位字节（数据的 “大” 部分）存储在高内存地址。
+
+                * 存储十六进制数 0x12345678（由字节 0x12、0x34、0x56、0x78 组成，0x12 是高位，0x78 是低位）时，内存中字节顺序为 0x78（低地址）、0x56、0x34、0x12（高地址）。
+
+                * x86 架构的 CPU（如常见的 Intel、AMD 处理器）、大部分桌面和移动端操作系统（Windows、Android 等）默认采用小端字节序；Node.js 里的 utf16le 编码也基于小端字节序。
+
+            * 大端字节序（big-endian）: 高位字节存储在低内存地址，低位字节存储在高内存地址，符合人类读写数字的习惯（从高位到低位）。
+              
+                * 存储 0x12345678 时，内存中字节顺序为 0x12（低地址）、0x34、0x56、0x78（高地址）。
+
+                * 网络传输（如 TCP/IP 协议栈中，IP 地址、端口等数据默认用大端序，也叫 “网络字节序”）；PowerPC、SPARC 等架构的 CPU；一些嵌入式系统；Node.js 中若需处理网络协议相关数据，常需要在小端（本地）和大端（网络）之间转换。
+
+        > 注意：对于我们的计算机而言的话，是低地址的数据是优先进行读取的，高地址的数据是延后读取的，所以才说，大端的存储符合我们人的习惯的呐
+
+        :::
+
+    * `base64`：Base64 编码。从字符串创建 Buffer 时，这种编码也会正确接受 RFC 4648 第 5 节中规定的 “URL 和文件名安全字母表”。base64 编码字符串中包含的空格、制表符和换行符等空白字符会被忽略。
+
+    * `base64url`：RFC 4648 第 5 节中规定的 base64url 编码。从字符串创建 Buffer 时，这种编码也会正确接受常规的 base64 编码字符串。将 Buffer 编码为字符串时，这种编码会省略填充。
+
+    * `hex`：将每个字节编码为两个十六进制字符。对不完全由偶数个十六进制字符组成的字符串进行解码时，可能会发生数据截断
+
+        :::info
+
+        ```javascript
+        import { Buffer } from 'node:buffer';
+
+        Buffer.from('1ag123', 'hex');
+        // Prints <Buffer 1a>, data truncated when first non-hexadecimal value
+        // ('g') encountered.
+
+        Buffer.from('1a7', 'hex');
+        // Prints <Buffer 1a>, data truncated when data ends in single digit ('7').
+
+        Buffer.from('1634', 'hex');
+        // Prints <Buffer 16 34>, all data represented.
+        ```
+
+        * 最常用的API是：
+
+            * `Buffer.from(array)` 从一个数组构建出对应的Buffer对象，返回 `<buffer class object>`
+
+            * `Buffer.from(buffer)` 从一个buffer实例创建出一个buffer对象，返回`<buffer class object>`
+
+            * `Buffer.from(arrayBuffer[, byteOffset[, length]])`
+
+            * `Buffer.from(string[, encoding])`
+
+        > `Buffer.from(...)` 构建出来的 buffer 实例本身也是一个可迭代对象，这就说明是可以直接进行 `for...of` 操作的呐
+
+        :::
+
+:::
+
+## Buffer Blob Class Object
+
+:::note
+
+> * 核心点记忆：一个Blob对象本质上封装了一些不可变的数据类型，所以说是支持在多个工作线程（multi-thread）之间被安全的共享的呢
+>     * 核心解决的问题就是后期的多线程提高CPU效率的时候，使用内存共享，优化空间消耗吧
+
+### `new Buffer.Blob([source[, options]])`
+
+* 时刻注意上面的核心描述：就是Blob对象本质上封装的是一些不可变的数据类型
+
+* `source`: `<string[]>` `<ArrayBuffer[]>` `<TypeArray[]>` `<DataView[]>` `Blob[]`
+
+    * ArrayBuffer TypedArray DataView Blob 或者其他的任意的混合类型，都是可以在 Blob 对象内部进行内存分配的呐
+
+    * 核心：我们常见的一些文件类型的操作，基本上都是基于 Blob 对象来进行的二次封装的呐
+
+### `Blob 对象实例 API`
+
+* 主要是针对的是 Blob 对象实例的 API 总结吧
+
+    :::info 
+
+    * `blob.arrayBuffer()`: 返回的是一个充满blob类型数据的 Promise
+
+    * `blob.bytes()` 返回的是 promise 对象，是 Blob 对象的字节
+
+    * `blob.size` 获取得到对应数据的大小的呐
+
+    * `blob.slice[start[, end[, type]]]` : 进行blob数据的截取的呐
+
+        * start 开始的index
+
+        * end 结束的index
+
+        * type 指定返回的新的 blob 的类型的呐
+
+        * 得到的是原本的blob的`subset`子集
+
+    * `blob.stream()` 得到一个可读流对象`<ReadableStream>`
+
+    * `blob.text()` 返回一个Promise，并且数据是解码后的UTF-8字符串
+
+    * `blob.type` 获取得到当前 blob 数据的 `content-type`
+
+    :::
+
+### `Blob With MessageChannel`
+
+* 一旦创建了一个 `<Blob>` 对象，它就可以通过 `MessagePort` 发送到多个目标，而无需传输或立即复制数据。只有当调用 `arrayBuffer()` 或 `text()` 方法时，`Blob` 所包含的数据才会被复制。
+
+    :::tip
+
+    * 这里的话也不用太担心使用 ArrayBuffer 或者 Blob 对象的时候内存问题：
+
+        * Blob 的数据复制的话是 **按需触发**，只有当我们主动调用 `arrayBuffer()` 和 `text` 的时候，才会进行复制一份数据出来吧 
+
+        * 只有 “调用一次，复制一次”，如果代码里没有循环 / 反复调用，就不会持续生成副本。
+
+        * 以及 javascript 的垃圾回收机制（GC）会自动化的清除无用的副本
+
+            * JavaScript 是有垃圾回收机制的：当某个 ArrayBuffer 或字符串（由 text() 生成）不再被任何变量引用时，运行时会自动回收它占用的内存。
+
+            * 所以说核心需要注意的是：避免书写具有循环引用的代码出来吧
+
+        * Blob 的核心优势是：在多线程传递时，本身不主动复制数据，只有当你需要 “读取内容” 时才复制。
+
+            * 这反而 **避免了 “提前全量复制”** 的内存浪费 —— 比如一个很大的 Blob，如果只是在线程间传递（但暂时不需要读内容），此时内存里只有一份 Blob 数据；只有真正要解析内容时，才生成对应副本，且用完就回收。
+
+        * 导致内存飙升的情况可能有：
+
+            * 代码存在 **“高频重复调用 arrayBuffer()/text() + 刻意保留所有副本引用”** 的逻辑，才可能导致内存压力
+
+    :::
+
+    :::info
+
+    ```javascript
+    import { Blob } from "node:buffer";
+    import { setTimeout } from "node:timers/promises";
+
+    const blob = new Blob(['hello world']);
+
+    const mc1 = MessageChannel();
+    const mc2 = MessageChannel();
+
+    mc1.port1.onmessage = async ({ data }) => {
+        console.log(await data.ArrayBuffer()); // 此时data被复制了的
+        mc1.port1.close();
+    }
+
+    mc2.port1.onmessage = async ({ data }) => {
+        await delay(1000);
+        console.log(await data.ArrayBuffer());  // 此时data被复制了的
+        mc2.port1.close();
+    }
+
+    mc1.port2.postMessage(blob);
+    mc2.port2.postMessage(blob);
+
+    blob.text().then(console.log)
+    ```
+
+    :::
+
+:::

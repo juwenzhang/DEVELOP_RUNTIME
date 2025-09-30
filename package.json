@@ -2,7 +2,6 @@
   "name": "develop_runtime",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "docs:dev": "rspress dev",
     "docs:build": "rspress build",
@@ -15,7 +14,10 @@
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.51.0",
     "@shikijs/transformers": "^3.13.0",
-    "rspress": "^1.45.6",
+    "@types/node": "18.11.17",
     "shiki-transformers": "link:@rspress/core/shiki-transformers"
+  },
+  "dependencies": {
+    "rspress": "^1.45.6"
   }
 }

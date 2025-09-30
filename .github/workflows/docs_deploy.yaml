@@ -1,15 +1,16 @@
-name: Deploy Rspress Docs
+name: Deploy Develop Runtime Docs
 on:
   push:
     branches: [master, main]
     paths:
-      - 'docs/**'
+      - 'doc/**'
   pull_request:
     branches: [master, main]
     paths:
-      - 'docs/**'
-  workflow_dispatch:
+      - 'doc/**'
 
+  workflow_dispatch:
+    
 permissions:
   contents: read
   pages: write
