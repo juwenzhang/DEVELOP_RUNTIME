@@ -3,3 +3,5 @@ doc_build
 .env
 .env.local
 .env.prod
+
+logs/*
