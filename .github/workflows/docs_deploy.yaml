@@ -2,11 +2,12 @@ name: Deploy Rspress Docs
 on:
   push:
     branches: [master, main]
-  merge:
+    paths:
+      - 'docs/**'
+  pull_request:
     branches: [master, main]
-  paths:
-    - 'doc/**'
-
+    paths:
+      - 'docs/**'
   workflow_dispatch:
 
 permissions:
