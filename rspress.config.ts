@@ -43,5 +43,5 @@ export default defineConfig({
         prevPageText: '上一篇(prevPageText) ⬅️',
         nextPageText: '下一篇(nextPageText) ➡️',
     },
-    base: '/develop_runtime/'
+    base: '/DEVELOP_RUNTIME/'
 })
