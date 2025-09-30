@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/juwenzhang/Desktop/develop_runtime/packages/async_insight/examples/logs/.de3380d9fb580ffaa65bb1d974dbccd60b64bfd8-audit.json",
+    "files": [
+        {
+            "date": 1759206513367,
+            "name": "/Users/juwenzhang/Desktop/develop_runtime/packages/async_insight/examples/logs/app-2025-09-30.log",
+            "hash": "38e22d7ddb5867224f1fcb80d3ce038d152423eb8a15d918b5cef4beb75d3fa2"
+        }
+    ],
+    "hashType": "sha256"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "develop_runtime",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "rspress dev",
+    "build": "rspress build",
+    "preview": "rspress preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.14.0",
+  "devDependencies": {
+    "@dotenvx/dotenvx": "^1.51.0",
+    "@shikijs/transformers": "^3.13.0",
+    "rspress": "^1.45.6",
+    "shiki-transformers": "link:@rspress/core/shiki-transformers"
+  }
+}

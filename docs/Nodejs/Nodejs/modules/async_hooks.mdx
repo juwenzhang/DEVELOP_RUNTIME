@@ -1,0 +1,223 @@
+# async_hooks
+
+> 异步钩子 🪝
+
+:::tip
+
+官方对应网页：https://nodejs.org/docs/latest/api/async_hooks.html
+
+:::
+
+:::warning
+
+官网描述：
+
+我们极其不建议使用 `async_hooks` API，因为其他的 API 可以绝大程度上覆盖其使用场景
+
+    * `AsyncLocalStorage` 跟踪异步上下文
+
+    * `process.getActiveResourcesInfo` 跟踪激活的资源
+
+:::
+
+## 概念
+
+:::info
+
+* 异步资源表示一个带有相关回调的对象。
+
+    * 这个回调可能被调用多次（`multi-times`），比如网络请求：`net.createServer()` 中的 `connection` 事件
+
+    * 也可能只是调用一次(`single-time`)，比如`fs.open()` 里的情况。
+    
+    * 资也可能在回调被调用前就被关闭
+
+* 但是 `AsyncHooks` 是不会对其进行一个严格区分，统一称为 `资源`
+
+> 如果使用了线程 `worker` ，每一个线程都是有一个独立的 `async_hooks` 的接口，每个线程都会使用一组新的异步 `ID`
+
+```javascript
+const async_hooks = require('node:async_hooks');
+
+// Return the ID of the current execution context.
+const eid = async_hooks.executionAsyncId();
+
+// Return the ID of the handle responsible for triggering the callback of the
+// current execution scope to call.
+const tid = async_hooks.triggerAsyncId();
+
+// Create a new AsyncHook instance. All of these callbacks are optional.
+const asyncHook =
+    async_hooks.createHook({ init, before, after, destroy, promiseResolve });
+
+// Allow callbacks of this AsyncHook instance to call. This is not an implicit
+// action after running the constructor, and must be explicitly run to begin
+// executing callbacks.
+asyncHook.enable();
+
+// Disable listening for new asynchronous events.
+asyncHook.disable();
+
+//
+// The following are the callbacks that can be passed to createHook().
+//
+
+// init() is called during object construction. The resource may not have
+// completed construction when this callback runs. Therefore, all fields of the
+// resource referenced by "asyncId" may not have been populated.
+function init(asyncId, type, triggerAsyncId, resource) { }
+
+// before() is called just before the resource's callback is called. It can be
+// called 0-N times for handles (such as TCPWrap), and will be called exactly 1
+// time for requests (such as FSReqCallback).
+function before(asyncId) { }
+
+// after() is called just after the resource's callback has finished.
+function after(asyncId) { }
+
+// destroy() is called when the resource is destroyed.
+function destroy(asyncId) { }
+
+// promiseResolve() is called only for promise resources, when the
+// resolve() function passed to the Promise constructor is invoked
+// (either directly or through other means of resolving a promise).
+function promiseResolve(asyncId) { }
+```
+
+:::
+
+## `async_hooks.createHook(callbacks)`
+
+* callbacks 实现的是定义一个对象的数据类型吧，以及在内部会实现注册一些回调事件吧，返回的是 async_hooks 的实例
+
+    * init() `function` 初始化时执行回调
+
+    * before() `function` 执行前的回调
+
+    * after()  `function` 回调后的执行回调
+
+    * destory() `function` 销毁时的执行回调
+
+    * promiseResolve()
+
+* 这些注册的函数会被调用在每个异步操作的不用生命周期中
+
+* 在一个资源的生命周期内，回调函数 init()、before()、after()、destroy() 会针对各自相应的异步事件被调用
+
+:::tip
+
+* 所有的回调函数都是可选的，思想的话是和比如说一些打包的配置或者说组件的生命周期函数的使用类似，都是可选择
+
+```javascript
+const async_hooks = require("node:async_hooks")
+const asyncHooksInstance = async_hooks.createHook({
+    init(asyncId, type, triggerAsyncId, resource) {},
+    destory(asyncId) {}
+})
+```
+
+:::
+
+:::details
+
+* 更详细的例子
+
+```javascript
+const async_hooks = require('node:async_hooks');
+
+class MyAsyncCallback {
+    init(asyncId, type, triggerAsyncId, resource) {}
+    destroy(asyncId) {}
+}
+
+class MyAsyncCallbackWithAfter extends MyAsyncCallback {
+    after(asyncId) {}
+}
+
+class MyAsyncCallbackWithBefore extends MyAsyncCallback {
+    before(asyncId) {}
+}
+
+class MyAsyncCallbackWithPromiseResolve extends MyAsyncCallback {
+    promiseResolve(asyncId) {}
+}
+
+class MyAsyncCallbackWithAll extends MyAsyncCallbackWithAfter {
+    before(asyncId) {}
+    after(asyncId) {}
+    promiseResolve(asyncId) {}
+}
+
+const myAsyncCallbackWithAll = new MyAsyncCallbackWithAll();
+const asyncHookInstanceAll = async_hooks.createHook(myAsyncCallbackWithAll);
+
+module.exports = {
+    myAsyncCallbackWithAll,
+    asyncHookInstanceAll
+}
+```
+
+:::
+
+## `AsyncHookInstance.enable()`
+
+* 首先上面的案例已经说明了 craeetHook 实现的是创建对应的实例出来的
+
+* 对于实例的话也是有一些实例方法的呐
+
+:::info
+
+为给定的 AsyncHook 实例启用回调。如果没有提供回调，启用操作不会产生任何效果。
+AsyncHook 实例默认是禁用的。如果 AsyncHook 实例应该在创建后立即启用，可以使用以下模式
+
+:::
+
+## `AsyncHookInstance.disable()`
+
+:::tip
+
+从要执行的 AsyncHook 全局回调池中，禁用给定 AsyncHook 实例的回调。一旦一个钩子被禁用，在重新启用之前，它将不会再被调用。
+为了 API 的一致性，disable() 也会返回该 AsyncHook 实例。
+
+:::
+
+## `Hook callbacks`
+
+### `init`
+:::info
+
+异步事件生命周期中的关键事件被归类为四个方面：实例化、回调调用前/后，以及实例销毁时。
+
+* init(asyncId, type, triggerAsyncId, resource)
+    * asyncId number：异步资源的唯一 ID。
+    * type string：异步资源的类型。
+    * triggerAsyncId number：在其执行上下文中创建此异步资源的异步资源的唯一 ID。
+    * resource Object：表示异步操作的资源的引用，需要在 `destroy` 时释放。
+
+当构造一个有可能发出异步事件的类时调用。这并不意味着实例必须在 `destroy` 被调用前调用 `before` / `after`，只是存在这种可能性。
+
+这种行为可以通过类似这样的操作来观察：打开一个资源，然后在该资源可被使用前关闭它。下面的代码片段演示了这一点。
+
+```javascript
+require('node:net').createServer().listen(function() { this.close(); });
+clearTimeout(setTimeout(() => {}, 10));
+```
+
+每个新资源都会被分配一个在当前 Node.js 实例范围内唯一的 ID。
+
+:::
+
+:::details
+
+* `type`
+    * type 是一个字符串，用于标识导致 init 被调用的资源类型。通常，它与资源构造函数的名称相对应。
+    * Node.js 自身创建的资源的 type 在 Node.js 的任何版本中都可能发生变化。有效的值包括 TLSWRAP、TCPWRAP、TCPSERVERWRAP、GETADDRINFOREQWRAP、FSREQCALLBACK、Microtask 和 Timeout。要获取完整列表，请查看所使用的 Node.js 版本的源代码。
+    * 此外，AsyncResource 的用户可以独立于 Node.js 自身创建异步资源。
+    * 还有 PROMISE 资源类型，用于跟踪 Promise 实例以及由它们调度的异步工作。
+    * 当使用公共嵌入器 API 时，用户能够定义自己的 type。
+    * 可能会出现类型名称冲突的情况。建议嵌入器使用唯一的前缀（例如 npm 包名称），以防止在监听钩子时发生冲突。
+
+* `triggerAsyncId`
+    * triggerAsyncId 是导致（或 “触发”）新资源初始化并使得 init 被调用的资源的 asyncId。这与 async_hooks.executionAsyncId() 不同，async_hooks.executionAsyncId() 仅显示资源何时被创建，而 triggerAsyncId 显示资源为何被创建。
+
+:::
