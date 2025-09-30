@@ -3,8 +3,8 @@ pageType: home
 
 hero:
   name: JUWENZHANG DEVELOPMENT RUNTIME
-  text: A development runtime for Node|Python|Golang|Rust
-  tagline: 文档集成站点
+  text: Document-Site
+  tagline: A development runtime for Node|Python|Golang|Rust
   actions:
     - theme: brand
       text: Quick Start
