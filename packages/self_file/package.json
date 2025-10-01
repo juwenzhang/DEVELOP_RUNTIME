@@ -1,0 +1,43 @@
+{
+  "name": "@develop_runtime/self-file",
+  "version": "1.0.0",
+  "description": "Cross-environment File",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "browser": "dist/umd/self-file.js",
+  "types": "dist/types/index.d.ts",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": {
+        "import": "./dist/esm/index.mjs",
+        "require": "./dist/cjs/index.js",
+        "default": "./dist/iife/index.global.js"
+      },
+      "import": "./dist/esm/index.mjs",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "build:esm": "tsup --format esm",
+    "build:cjs": "tsup --format cjs",
+    "build:iife": "tsup --format iife",
+    "build:types": "tsup --dts-only",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "postbuild": "node ../../scripts/copy-files.js self_file dist",
+    "types:lint": "npx tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.19",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "buffer": "^6.0.3",
+    "mime-types": "^3.0.1"
+  }
+}

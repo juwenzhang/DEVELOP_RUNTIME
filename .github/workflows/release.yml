@@ -1,0 +1,117 @@
+name: Auto Release
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'packages/**'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'packages/**'
+  # workflow_dispatch: # 允许手动触发
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed_packages: ${{ steps.detect-changes.outputs.changed_packages }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Detect changed packages
+        id: detect-changes
+        run: |
+          # 获取上一次提交和当前提交之间的差异文件
+          changed_files=$(git diff --name-only HEAD^ HEAD)
+          
+          # 定义包目录
+          packages_dir="packages"
+          
+          # 初始化结果数组
+          changed_packages=()
+          
+          # 检查每个文件是否属于某个包目录
+          for file in $changed_files; do
+            if [[ $file == $packages_dir/* ]]; then
+              # 提取包名（第一个目录层级）
+              package_name=$(echo $file | cut -d'/' -f2)
+              # 添加到结果数组（去重）
+              if [[ ! "${changed_packages[@]}" =~ "$package_name" ]]; then
+                changed_packages+=($package_name)
+              fi
+            fi
+          done
+          
+          # 设置输出，以逗号分隔的包名列表
+          echo "changed_packages=$(IFS=,; echo "${changed_packages[*]}")" >> $GITHUB_OUTPUT
+          echo "Changed packages: $(IFS=,; echo "${changed_packages[*]}")"
+
+  release:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.changed_packages != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: ${{ fromJSON(format('["{0}"]', needs.detect-changes.outputs.changed_packages)) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'pnpm'
+          registry-url: https://registry.npmjs.org/
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Build the package
+        working-directory: ./packages/${{ matrix.package }}
+        run: pnpm run build
+      
+      - name: Semantic Release
+        working-directory: ./packages/${{ matrix.package }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
+
+  update-workspace-lockfile:
+    needs: release
+    runs-on: ubuntu-latest
+    if: ${{ success() }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'pnpm'
+      
+      - name: Install dependencies to update lockfile
+        run: pnpm install --lockfile-only
+      
+      - name: Commit updated lockfile
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add pnpm-lock.yaml
+          git commit -m "chore: update pnpm-lock.yaml after release" || echo "No changes to commit"
+          git push

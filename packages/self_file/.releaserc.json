@@ -1,0 +1,122 @@
+{
+  "branches": [
+    "master",
+    "main",
+    {
+      "name": "beta",
+      "prerelease": true
+    }
+  ],
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits",
+        "releaseRules": [
+          {
+            "type": "docs",
+            "scope": "README",
+            "release": "patch"
+          },
+          {
+            "type": "refactor",
+            "release": "patch"
+          },
+          {
+            "type": "style",
+            "release": "patch"
+          }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits",
+        "presetConfig": {
+          "types": [
+            {
+              "type": "feat",
+              "section": "✨ 新功能",
+              "hidden": false
+            },
+            {
+              "type": "fix",
+              "section": "🐛 修复",
+              "hidden": false
+            },
+            {
+              "type": "docs",
+              "section": "📝 文档",
+              "hidden": false
+            },
+            {
+              "type": "style",
+              "section": "💄 样式",
+              "hidden": false
+            },
+            {
+              "type": "refactor",
+              "section": "♻️ 重构",
+              "hidden": false
+            },
+            {
+              "type": "perf",
+              "section": "⚡️ 性能优化",
+              "hidden": false
+            },
+            {
+              "type": "test",
+              "section": "✅ 测试",
+              "hidden": false
+            },
+            {
+              "type": "build",
+              "section": "🏗️ 构建",
+              "hidden": false
+            },
+            {
+              "type": "ci",
+              "section": "👷 CI/CD",
+              "hidden": false
+            },
+            {
+              "type": "chore",
+              "section": "🔧 杂项",
+              "hidden": false
+            },
+            {
+              "type": "revert",
+              "section": "⏪ 回滚",
+              "hidden": false
+            }
+          ]
+        }
+      }
+    ],
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md",
+        "changelogTitle": "# 更新日志"
+      }
+    ],
+    [
+      "@semantic-release/npm",
+      {
+        "npmPublish": true,
+        "tarballDir": "dist"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "package.json",
+          "CHANGELOG.md"
+        ],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ]
+  ]
+}

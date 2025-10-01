@@ -4,4 +4,5 @@ doc_build
 .env.local
 .env.prod
 
-logs/*
+logs/
+dist/

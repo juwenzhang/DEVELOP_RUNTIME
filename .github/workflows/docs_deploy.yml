@@ -3,11 +3,11 @@ on:
   push:
     branches: [master, main]
     paths:
-      - 'doc/**'
+      - 'docs/**'
   pull_request:
     branches: [master, main]
     paths:
-      - 'doc/**'
+      - 'docs/**'
 
   # workflow_dispatch:
     

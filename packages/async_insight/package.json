@@ -1,20 +1,60 @@
 {
-  "name": "async_insight",
+  "name": "@develop_runtime/async-insight",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "description": "Node.js异步资源监控和追踪工具",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "browser": "dist/umd/async-insight.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": {
+        "import": "./dist/esm/index.js",
+        "require": "./dist/cjs/index.js",
+        "default": "./dist/umd/async-insight.js"
+      },
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
   },
-  "keywords": [],
+  "scripts": {
+    "build": "tsup",
+    "build:esm": "tsup --format esm",
+    "build:cjs": "tsup --format cjs",
+    "build:iife": "tsup --format iife",
+    "build:types": "tsup --dts-only",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "postbuild": "node ../../scripts/copy-files.js async_insight dist",
+    "types:lint": "npx tsc --noEmit"
+  },
+  "keywords": [
+    "async",
+    "insight",
+    "monitoring",
+    "tracking",
+    "nodejs"
+  ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
+    "@koa/router": "^14.0.0",
     "express": "^5.1.0",
+    "fastify": "^4.28.1",
+    "koa": "^3.0.1",
     "prom-client": "^15.1.3",
     "uuid": "^8.3.2",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/koa": "^3.0.0",
+    "@types/node": "^20.19.19",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
   }
 }
