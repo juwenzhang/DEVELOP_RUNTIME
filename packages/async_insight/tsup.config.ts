@@ -13,7 +13,7 @@ export default defineConfig({
     entry: ['src/index.ts'],
     outDir: 'dist',
     format: ['esm', 'cjs', 'iife'],
-    globalName: 'SelfFile',
+    globalName: 'AsyncInsight',
     dts: true,
     minify: true,
     splitting: true,
