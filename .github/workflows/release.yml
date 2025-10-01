@@ -76,11 +76,11 @@ jobs:
         run: pnpm install
       
       - name: Build the package
-        working-directory: ./packages/${{ matrix.package }}
+        working-directory: packages/${{ matrix.package }}
         run: pnpm run build
       
       - name: Semantic Release
-        working-directory: ./packages/${{ matrix.package }}
+        working-directory: packages/${{ matrix.package }}
         env:
           GITHUB_TOKEN: ${{ secrets.SECRET_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
