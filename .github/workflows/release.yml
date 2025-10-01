@@ -24,39 +24,29 @@ jobs:
       - name: Detect changed packages
         id: detect-changes
         run: |
-          # 获取上一次提交和当前提交之间的差异文件
           changed_files=$(git diff --name-only HEAD^ HEAD)
-          
-          # 定义包目录
           packages_dir="packages"
-          
-          # 初始化结果数组
           changed_packages=()
-          
-          # 检查每个文件是否属于某个包目录
           for file in $changed_files; do
             if [[ $file == $packages_dir/* ]]; then
-              # 提取包名（第一个目录层级）
               package_name=$(echo $file | cut -d'/' -f2)
-              # 添加到结果数组（去重）
               if [[ ! "${changed_packages[@]}" =~ "$package_name" ]]; then
                 changed_packages+=($package_name)
               fi
             fi
           done
-          
-          # 设置输出，以逗号分隔的包名列表
-          echo "changed_packages=$(IFS=,; echo "${changed_packages[*]}")" >> $GITHUB_OUTPUT
-          echo "Changed packages: $(IFS=,; echo "${changed_packages[*]}")"
+          # 输出 JSON 数组
+          echo "changed_packages=$(printf '%s\n' "${changed_packages[@]}" | jq -R . | jq -s .)" >> $GITHUB_OUTPUT
+          echo "Changed packages: $(printf '%s\n' "${changed_packages[@]}" | jq -R . | jq -s .)"
 
   release:
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.changed_packages != '' }}
+    if: ${{ needs.detect-changes.outputs.changed_packages != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: ${{ fromJSON(format('["{0}"]', replace(needs.detect-changes.outputs.changed_packages, ',', '","'))) }}
-      steps:
+        package: ${{ fromJSON(needs.detect-changes.outputs.changed_packages) }}
+    steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
