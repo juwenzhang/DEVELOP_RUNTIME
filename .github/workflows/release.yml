@@ -55,8 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: ${{ fromJSON(format('["{0}"]', needs.detect-changes.outputs.changed_packages)) }}
-    steps:
+        package: ${{ fromJSON(format('["{0}"]', replace(needs.detect-changes.outputs.changed_packages, ',', '","'))) }}
+      steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0

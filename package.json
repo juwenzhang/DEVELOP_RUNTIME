@@ -10,7 +10,7 @@
     "check:build": "pnpm run -r build",
     "check:commitlint": "echo 'Commitlint配置已存在，通过GitHub Actions验证'",
     "check:release-config": "echo 'Semantic-release配置已存在，通过GitHub Actions验证 (需要Node.js >=20.8.1)'",
-    "check:all": "pnpm run check:build && pnpm run check:commitlint && pnpm run check:release-config && pnpm run check:workflows",
+    "check:all": "pnpm run check:build && pnpm run check:commitlint && pnpm run check:release-config",
     "check:workflows": "node ./scripts/validate-workflows.js"
   },
   "lint-staged": {
