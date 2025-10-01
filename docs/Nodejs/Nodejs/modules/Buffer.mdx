@@ -133,7 +133,7 @@ console.log(Buffer.from('fhqwhgads', 'utf16le'));
 
 :::
 
-## Buffer Blob Class Object
+## Blob Class Object
 
 :::note
 
@@ -213,6 +213,7 @@ console.log(Buffer.from('fhqwhgads', 'utf16le'));
     ```javascript
     import { Blob } from "node:buffer";
     import { setTimeout } from "node:timers/promises";
+    import { MessageChannel } from "node:worker_threads"
 
     const blob = new Blob(['hello world']);
 
@@ -236,6 +237,138 @@ console.log(Buffer.from('fhqwhgads', 'utf16le'));
     blob.text().then(console.log)
     ```
 
+    > `new MessageChannel()` 创建的是一个通道，核心含有两个端口 `port1` 和 `port2`
+
+    > 主要核心实现监听的事件是：`onmessage`  `postMessage`  `close`
+
+    > 一个是用于进行发送消息的，一个是用于监听接收消息的，一个是用于关闭资源的呐
+
+    > 对于这种具备通信机制的操作来说的话一般有：
+
+    > 1. 主线程，工作线程（子线程）【因为核心的任务交给子线程进行处理的呐，所以说叫工作线程】
+
+    ```javascript
+    const { Worker, MessageChannel } = require('node:worker_threads');
+    // 在主线程中创建一个通道实例
+    const { port1, port2 } = new MessageChannel();
+    // 规则：port1 用于监听主线程接受消息，port2用于工作线程发送消息
+    port1.onmessage = msg => {
+        console.log("工作线程操作后返回的消息是：", msg);
+        if (msg.message === '完成') {
+            port1.close();
+        }
+    }
+    const child_worker = new Worker('./worker.js', {
+        workerData: {
+            port: port2 // 传递端口
+        },
+        transferList: [port2]  // 转移端口所有权，保证可以被使用
+    })
+    port2.postMessage('执行任务吧')
+
+
+    // 子线程中处理操作实现
+    const { workerData, parentPort } = require('worker_threads');
+    const { port } = workerData;
+    port.on('message', (mag) => {
+        console.log('工作线程收到：', msg);
+        port.postMessage({
+            message: '完成'
+        })
+    })
+    ``` 
+
+    * `MessagePort` 本质是一个 事件发射器（`EventEmitter`），每个端口都是独立的通信端点，因此可以同时监听多个端口
+
+    * 端口独立性：每个 `MessageChannel` 创建的 `port1` 和 `port2` 是独立的对象，多个通道的端口之间没有关联
+
+    * 事件驱动机制：Node.js 的事件循环会分别处理每个端口的 `message` 事件，即使同时监听多个端口，也能通过事件队列有序处理消息
+
+    * 多通道支持：可以创建多个 `MessageChannel`，得到多对端口（如 `portA1/portA2`、`portB1/portB2`），分别用于不同的通信场景
+
+    > 注意事项：
+    > 1. 端口所有权转移：通过 postMessage 传递端口时，必须在 transferList 中指定端口，否则端口会被冻结，无法在目标线程使用
+    > 2. 单线程限制：MessageChannel 用于跨线程通信，同一线程内的端口通信没有意义（直接调用函数更高效）
+    > 3. 关闭端口：通信结束后需调用 port.close()，避免资源泄漏
+
     :::
+
+:::
+
+## Buffer Class Object
+
+:::note
+
+* 对于面向对象的 Javascript 而言，我们的方法主要包含两大类吧：原型方法（实例方法prototype）和静态方法（static）
+
+* 下面主要是总结一些核心的 API 即可
+
+    :::details
+
+    * `Buffer.alloc(size[,fillContext, encoding])`
+
+    * `Buffer.isBuffer(data)`
+
+    * `Buffer.isEncoding('character-encoding')`
+
+    * `Buffer.from()`
+
+    * `buf.entries()`
+
+    * `buf.keys()`
+
+    * `buf.values()`
+
+    :::
+
+:::
+
+## File Class Object
+
+:::note
+
+* 描述的是关于文件类型的信息的对象，继承于 `Blob` 对象吧
+
+* 核心的API
+
+    * `new Buffer.File(sources, fileName, options)`
+
+        * sources 任何类型的混合对象吧，这些都是可以被file对象所存储的呐
+
+        * fileName 就是对应文件名吧
+
+        * options
+
+            * endings
+
+            * type 也就是文件的类型吧
+
+            * lastModified 也就是文件最后被更新的时间，默认是 `Date.now()`
+
+    * `file.name`
+
+        * 实现的是获取得到文件的名称吧
+
+    * `file.lastModified`
+
+        * 就是获取得到文件的最新的更新时间
+    
+    :::info
+
+    * other API
+
+        * `buffer.atob()`
+
+            * Decodes a string of Base64-encoded data into bytes, and encodes those bytes into a string using Latin-1 (ISO-8859-1).
+
+            * The data may be any JavaScript-value that can be coerced into a string.
+
+        * `buffer.btoa()`
+
+            * Decodes a string into bytes using Latin-1 (ISO-8859), and encodes those bytes into a string using Base64.
+
+            * The data may be any JavaScript-value that can be coerced into a string.
+
+    ::
 
 :::

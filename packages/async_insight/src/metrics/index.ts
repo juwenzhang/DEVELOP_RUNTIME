@@ -1,16 +1,31 @@
+import { Counter, Histogram, register, collectDefaultMetrics } from 'prom-client';
+import { DEFAULT_CONFIG } from '../constants';
+
+// 清除默认存在的指标信息
+register.clear();
+
 /**
- * 自定义指标实现: prom-client 进行的使用吧, 对标的是 java 指标记录库：micrometer
+ * 定义指标对象类型
  */
-const { Counter, Histogram, register } = require('prom-client');
-const { DEFAULT_CONFIG } = require('../constants');
+export interface MetricsType {
+    // 异步资源加载总数
+    asyncResourceInitTotal: Counter<string>;
+    // 异步资源执行耗时
+    asyncResourceExecDuration: Histogram<string>;
+    // 异步资源生命周期耗时
+    asyncResourceLifecycleDuration: Histogram<string>;
+    // 异步资源泄漏总数
+    asyncResourceLeakTotal: Counter<string>;
+    // 上下文传递次数
+    asyncResourceContextPassTotal: Counter<string>;
+    // 上下文传播总数
+    contextPropagationTotal: Counter<string>;
+}
 
-// 首先进行清除默认存在的指标信息
-(() => {
-    register.clear();
-})()
-
-// 开始设计指标
-const metrics = {
+/**
+ * 指标对象，包含所有需要监控的指标
+ */
+export const metrics: MetricsType = {
     // 异步资源加载总数
     asyncResourceInitTotal: new Counter({
         name: 'async_resource_init_total',
@@ -41,33 +56,32 @@ const metrics = {
         labelNames: ['type', 'service_name']
     }),
 
-    //上下文传递次数
+    // 上下文传递次数
     asyncResourceContextPassTotal: new Counter({
         name: 'async_resource_context_pass_total',
         help: 'Total number of async resources passed through context',
         labelNames: ['type', 'service_name']
     }),
 
+    // 上下文传播总数
     contextPropagationTotal: new Counter({
         name: 'async_resource_context_propagation_total',
         help: 'Total number of async resources propagated through context',
         labelNames: ['type', 'service_name']
-    }),
-}   
+    })
+};
 
-function initMetrics() {
-    const { collectDefaultMetrics } = require('prom-client');
+/**
+ * 初始化默认指标
+ */
+export function initMetrics(): void {
     collectDefaultMetrics({
         register,
         prefix: 'async_insight_',
         labels: {
             service_name: DEFAULT_CONFIG.SERVICE_NAME
         }
-    })
+    });
 }
 
-module.exports = {
-    metrics,
-    register,
-    initMetrics
-}
+export { register };
