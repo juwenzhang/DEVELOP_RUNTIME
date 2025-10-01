@@ -48,4 +48,3 @@ export const getBlobConstructor: () => typeof Blob = () => {
     }
     throw new Error('获取不到 Blob 构造函数，😁😁')
 }
-
