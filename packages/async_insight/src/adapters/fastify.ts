@@ -5,7 +5,7 @@ import { ContextUtils } from '../utils/context';
 /**
  * Fastify 适配器
  * 提供 Fastify 框架的中间件集成
- */
+ */ 
 export class FastifyAdapter {
     private asyncInsight: AsyncInsight;
 
