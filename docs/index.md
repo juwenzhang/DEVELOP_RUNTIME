@@ -2,7 +2,7 @@
 pageType: home
 
 hero:
-  name: JUWENZHANG DEVELOPMENT RUNTIME
+  name: JUWENZHANG DEVELOP RUNTIME
   text: Document-Site
   tagline: A development runtime for Node|Python|Golang|Rust
   actions:

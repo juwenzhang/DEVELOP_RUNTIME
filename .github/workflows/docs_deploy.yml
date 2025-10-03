@@ -4,10 +4,12 @@ on:
     branches: [master, main]
     paths:
       - 'docs/**'
+      - '.github/workflows/docs_deploy.yml'
   pull_request:
     branches: [master, main]
     paths:
       - 'docs/**'
+      - '.github/workflows/docs_deploy.yml'
 
   # workflow_dispatch:
     

@@ -8,5 +8,10 @@
         "type": "file",
         "name": "Buffer",
         "label": "Buffer"
+    },
+    {
+        "type": "file",
+        "name": "NativeAddon",
+        "label": "NativeAddon"
     }
 ]
