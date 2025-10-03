@@ -6,3 +6,6 @@ doc_build
 
 logs/
 dist/
+
+build/
+.temp/

@@ -1,0 +1,170 @@
+# NativeAddons
+
+> https://nodejs.org/docs/latest/api/addons.html
+
+## introduce
+:::note
+
+附加组件（Addons）是用 C++ 编写的动态链接共享对象。`require()` 函数可以将附加组件作为普通的 Node.js 模块加载。附加组件提供了 JavaScript 和 C/C++ 库之间的接口。
+
+实现附加组件有三种选择：
+- Node-API
+- nan（Node.js 的原生抽象）
+- 直接使用内部的 V8、libuv 和 Node.js 库
+
+除非需要直接访问 Node-API 未公开的功能，否则请使用 Node-API。
+
+当不使用 Node-API 时，实现附加组件会变得更加复杂，需要了解多个组件和 API：
+- **V8**：Node.js 用于提供 JavaScript 实现的 C++ 库。它提供了创建对象、调用函数等机制。V8 的 API 主要记录在 `v8.h` 头文件（Node.js 源代码树中的 `deps/v8/include/v8.h`）中，也可在[网上](https://v8docs.nodesource.com/)获取。
+- **libuv**：实现 Node.js 事件循环、工作线程以及平台所有异步行为的 C 库。它还充当跨平台抽象库，使在所有主要操作系统上都能轻松地、类 POSIX 地访问许多常见系统任务，例如与文件系统、套接字、计时器和系统事件进行交互。libuv 还提供了类似于 POSIX 线程的线程抽象，以便更复杂的异步附加组件可以超越标准事件循环。附加组件作者应避免通过 I/O 或其他耗时任务阻塞事件循环，可通过 libuv 将工作卸载到非阻塞系统操作、工作线程或自定义使用 libuv 线程来实现。
+- **内部 Node.js 库**：Node.js 本身导出附加组件可以使用的 C++ API，其中最重要的是 `node::ObjectWrap` 类。
+- **其他静态链接库（包括 OpenSSL）**：这些其他库位于 Node.js 源代码树中的 `deps/` 目录中。只有 libuv、OpenSSL、V8 和 zlib 符号是 Node.js 特意重新导出的，附加组件可以在不同程度上使用它们。
+
+```C
+// hello.cc
+#include <node.h>
+
+namespace demo {
+
+using v8::FunctionCallbackInfo;
+using v8::Isolate;
+using v8::Local;
+using v8::NewStringType;
+using v8::Object;
+using v8::String;
+using v8::Value;
+
+void Method(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  args.GetReturnValue().Set(String::NewFromUtf8(
+      isolate, "world", NewStringType::kNormal).ToLocalChecked());
+}
+
+void Initialize(Local<Object> exports) {
+  NODE_SET_METHOD(exports, "hello", Method);
+}
+
+NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
+
+}  // namespace demo
+```
+
+* 注意事项
+
+    :::tip
+    所有 Node.js 扩展都必须按照以下模式导出一个初始化函数：
+
+    ```c
+    void Initialize(Local<Object> exports);
+    NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
+    ```
+
+    `NODE_MODULE` 后面没有分号，因为它不是一个函数（参见 `node.h`）。
+
+    `module_name` 必须与最终二进制文件的文件名（不包括 `.node` 后缀）匹配。
+
+    在 `hello.cc` 示例中，初始化函数是 `Initialize`，扩展模块名称是 `addon`。
+
+    当使用 `node-gyp` 构建扩展时，将宏 `NODE_GYP_MODULE_NAME` 用作 `NODE_MODULE()` 的第一个参数，将确保最终二进制文件的名称会被传递给 `NODE_MODULE()`。
+
+    用 `NODE_MODULE()` 定义的扩展不能同时在多个上下文或多个线程中加载。
+    :::
+
+    :::info
+
+    * 首先，关于那段 C 代码的意思：
+    Node.js 允许用 C/C++ 写扩展（相当于给 Node.js 加自定义功能），但必须遵守固定的“格式要求”：
+    1. 必须写一个叫 `Initialize` 的函数（名字可以改，但通常约定用这个），它的作用是把 C/C++ 里的功能（比如函数、变量）暴露给 Node.js 调用（通过 `exports` 对象，类似 Node.js 里的 `module.exports`）。
+    2. 必须用 `NODE_MODULE(...)` 这个宏来“注册”这个扩展，告诉 Node.js：“这是我的扩展，入口是 `Initialize` 函数”。  
+    - 注意它后面没有分号，因为它不是普通函数调用，而是 Node.js 定义的一个“宏指令”（可以理解为一段预定义的代码片段）。
+    - 扩展的名字（比如示例里的 `addon`）必须和最终编译出来的二进制文件名字一致（比如编译后叫 `addon.node`，那名字就是 `addon`）。
+    
+    ---
+
+    * 然后，`node-gyp` 是什么？
+    简单说，`node-gyp` 是一个“编译工具”，专门用来把 C/C++ 代码编译成 Node.js 能识别的扩展（也就是 `.node` 后缀的二进制文件）。
+    ---
+
+    * 为什么需要它？  
+    因为 Node.js 扩展本质是 C/C++ 程序，但需要适配 Node.js 的内部机制（比如 V8 引擎的接口），直接用普通的 C 编译器（如 gcc、MSVC）太麻烦。`node-gyp` 会帮你处理这些复杂的适配工作：  
+    - 自动生成编译所需的配置文件（比如 Makefile 或 Visual Studio 项目）。  
+    - 确保编译时使用正确的 Node.js 头文件和库文件。  
+    - 最终输出 `.node` 文件，让 Node.js 可以直接 `require` 加载。
+    ---
+
+    * 总结一下流程：
+    1. 你用 C/C++ 写扩展代码，按照规定的格式定义 `Initialize` 函数和 `NODE_MODULE` 注册。  
+    2. 用 `node-gyp` 配置编译参数，执行编译命令。  
+    3. `node-gyp` 生成 `.node` 二进制文件。  
+    4. 在 Node.js 代码里用 `require('./addon.node')` 加载，就能调用 C/C++ 实现的功能了。
+
+    这样做的好处是：让 Node.js 能利用 C/C++ 的高性能（比如处理密集计算），同时保持 JavaScript 的易用性。
+
+    :::
+
+:::
+
+## 搭建 `node-gyp` 开发环境
+
+:::note
+
+> 首先声明，我只用 pnpm 但是其他的一样的呐，可以自己查阅资料吧
+
+* `pnpm install node-gyp node-addon-api --save-dev`
+
+    * `node-gyp` 是本地的核心编译工具
+
+    * `node-addon-api` 简化的 C++ 接口吧，方便于寻找 `node.h` 的接口的呢
+
+    :::tip
+
+    * 进行安装后在 `node_module` 下就会出现一个 `node-gyp` 的包，然后出现一个可执行文件 `.bin/node-gyp`
+
+        * 只要是nodejs 中的可执行文件的话都是将可执行文件存储在 `.bin` 下的呐
+    
+    * 准备 C 编译环境和 python3环境进行操作
+
+        * `xcode-select --install` 验证 `xcode-select` 是否进行了安装了的 
+
+        * `brew install python3` 对于liunx和macbook自带的python版本都是`python2.7`的，但是为了动态链接的友好性，所以尽可能使用 `python3` 版本吧
+
+    :::
+
+* 编写配置文件
+
+    :::info
+
+    * 对于附加组件的编译工具`node-gyp`的是会进行识别你的配置文件的：`binding.gyp`
+
+    ```
+
+    Usage: node-gyp <command> [options]
+
+    where <command> is one of:
+        - build - Invokes `make` and builds the module
+        - clean - Removes any generated build files and the "out" dir
+        - configure - Generates a Makefile for the current module
+        - rebuild - Runs "clean", "configure" and "build" all at once
+        - install - Install node development files for the specified node version.
+        - list - Prints a listing of the currently installed node development files
+        - remove - Removes the node development files for the specified version
+
+    ```
+
+    * 这里注意下执行顺序
+
+        * 先进行 `pnpm exec node-gyp configure` ---> 生成`build` 目录
+
+        * 然后进行 `pnpm exec node-gyp build` --> 生成release `<name>.node`文件的呢
+
+    :::
+
+:::
+
+## Micro NODE_MODULE
+
+:::note
+
+* 核心的使用规则是：`NODE_MODULE()
+
+:::

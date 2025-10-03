@@ -5,10 +5,12 @@ on:
     branches: [master, main]
     paths:
       - 'packages/**'
+      - '.github/workflows/release.yml'
   pull_request:
     branches: [master, main]
     paths:
       - 'packages/**'
+      - '.github/workflows/release.yml'
   # workflow_dispatch: # 允许手动触发
 
 jobs:

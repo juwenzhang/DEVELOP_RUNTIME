@@ -1,0 +1,27 @@
+{
+  "name": "NativeAddons",
+  "version": "1.0.0",
+  "description": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "gyp:build": "pnpm exec node-gyp build",
+    "gyp:clean": "pnpm exec node-gyp clean",
+    "gyp:configure": "pnpm exec node-gyp configure",
+    "gyp:rebuild": "pnpm exec node-gyp rebuild",
+    "gyp:install": "pnpm exec node-gyp install",
+    "gyp:list": "pnpm exec node-gyp list",
+    "gyp:remove": "pnpm exec node-gyp remove",
+    "dev": "pnpm exec ts-node ./src/hello.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.14.0",
+  "devDependencies": {
+    "@types/node": "^24.6.2",
+    "node-addon-api": "^8.5.0",
+    "node-gyp": "^11.4.2",
+    "typescript": "^5.9.3"
+  }
+}
