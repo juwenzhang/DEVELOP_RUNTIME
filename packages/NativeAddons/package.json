@@ -2,7 +2,7 @@
   "name": "NativeAddons",
   "version": "1.0.0",
   "description": "",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "gyp:build": "pnpm exec node-gyp build",

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mini-docs-demo</title>
+    <!-- Preload 关键CSS -->
+    <link rel="preload" href="./static/css/index.css" as="style">
+    <!-- 正常引入所有资源 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+    <script src="./static/js/mini_utils.js"></script>
+    <link rel="stylesheet" href="./static/css/index.css">
+
+    <!-- 实现书写 CSS 样式吧 -->
+    <link rel="stylesheet" href="./static/css/index.css">
+</head>
+<body>
+    <div class="doc-container" id="docContainer"></div>
+
+    <script>
+        window.addEventListener("DOMContentLoaded", function () {
+            console.log('Marked library loaded:', typeof marked !== 'undefined');
+            
+            const mdContent = `
+# 测试页面
+
+## 基础测试
+:::warning 基础警告
+我是警告部分，这是一个基础的警告块
+:::
+
+:::note 基础笔记
+我是笔记部分，这是一个基础的笔记块
+:::
+
+:::tip 基础提示
+我是提示部分，这是一个基础的提示块
+:::
+
+## 嵌套测试（最多两层）
+:::info 外层信息块
+外层信息内容
+
+    :::warning 内层警告块
+    这是一个嵌套在内层的警告块（第二层）
+    :::
+
+外层信息内容继续
+:::
+
+## 超出嵌套层数测试（三层）
+:::detail 外层详情块
+外层详情内容
+
+    :::info 第二层信息块
+    第二层信息内容
+    第二层信息内容继续
+    :::
+
+外层详情内容继续
+:::
+            `;
+            
+            MiniDocsUtils.init(mdContent, "docContainer")
+        });
+    </script>
+</body>
+</html>
