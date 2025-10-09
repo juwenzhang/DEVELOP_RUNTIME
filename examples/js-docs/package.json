@@ -1,0 +1,23 @@
+{
+  "name": "js-docs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev:normal": "pnpm exec http-server",
+    "dev:watch": "pnpm exec http-server -w",
+    "dev:gzip": "pnpm exec http-server -g",
+    "dev:brotli": "pnpm exec http-server -b"
+  },
+  "files": [
+    "index.html",
+    "static/**/*"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.14.0",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
