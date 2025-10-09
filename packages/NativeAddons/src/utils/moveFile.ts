@@ -3,8 +3,9 @@ import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type GetFileContentType } from "../types/moveFileType";
 
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = dirname(__filename);
+// @ts-ignore
+const __filename = (typeof __filename !== 'undefined') ? __filename : fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const TEMPORARY_FILENAME = "temporary_file.json";
 
@@ -43,7 +44,7 @@ const getFileContent: (targetFileName: string, isDev?: boolean) => GetFileConten
 const writeContentIntoTemporaryFile: (content: string) => string 
 = (content: string) => {
     try {
-        const TEMPORARY_FILENAME_PATH = join("./", TEMPORARY_FILENAME);
+        const TEMPORARY_FILENAME_PATH = join(__dirname, TEMPORARY_FILENAME);
         if (existsSync(TEMPORARY_FILENAME_PATH)) {
             rmSync(TEMPORARY_FILENAME_PATH);
         }
