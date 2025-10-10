@@ -127,6 +127,12 @@ importers:
       '@types/node':
         specifier: ^24.7.0
         version: 24.7.1
+      node-addon-api:
+        specifier: ^8.5.0
+        version: 8.5.0
+      node-gyp:
+        specifier: ^11.4.2
+        version: 11.4.2
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

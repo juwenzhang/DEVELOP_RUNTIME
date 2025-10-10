@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "gyp:build": "pnpm exec node-gyp build",
+    "gyp:build": "pnpm exec node-gyp configure build",
     "gyp:clean": "pnpm exec node-gyp clean",
     "gyp:configure": "pnpm exec node-gyp configure",
     "gyp:rebuild": "pnpm exec node-gyp rebuild",

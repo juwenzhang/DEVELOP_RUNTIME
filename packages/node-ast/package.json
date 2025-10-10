@@ -5,7 +5,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "lint:syntax": "pnpm exec tsc --noEmit"
+    "lint:syntax": "pnpm exec tsc --noEmit",
+    "build": "pnpm exec node-gyp configure build",
+    "help": "pnpm exec node-gyp help"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +15,8 @@
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
     "@types/node": "^24.7.0",
+    "node-addon-api": "^8.5.0",
+    "node-gyp": "^11.4.2",
     "typescript": "^5.9.3"
   }
 }
