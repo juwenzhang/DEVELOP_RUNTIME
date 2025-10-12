@@ -10,7 +10,7 @@ export interface RRatConfig {
         nodeType: string,
         props: Record<string, any>
     },
-    transform: (node: Node) => Node
+    transform: (node: Node) => Node | Transformer
 }
 
 class NodeAstTransformer {

@@ -1,0 +1,23 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+authors = ["juwenzhang", "76433", "juzhihong"]
+
+[worksapce.dependencies]
+# write all monorepo rust dependencies at here
+# tips: record all dependencies, if you ignore one, it will display some bug in the project or 
+# in compiler-timing, build-timing, publish-timing, release-timing...
+# tips, tips, tips..... all developer must see the informations
+
+ast-cores                  = { version = "=0.1.0", path = "crates/ast-cores", default-features = false }
+ast-nodejs                 = { version = "=0.1.0", path = "crates/ast-nodejs", default-features = false }
+ast-wasm                   = { version = "=0.1.0", path = "crates/ast-wasm", default-features = false }
+ast-core                   = { path = "crates/ast-core" }
+regex                      = "1.9.6"
+serde                      = { version = "1.0.193", features = ["derive", "serde_json"] }
+neon                       = "0.10.1"
+wasm-bindgen               = "0.2.91"
+web-sys                    = { version = "0.3.64", features = ["console"] }
+ts-rs                      = { version = "7.0.0", features = ["serde-compat"] } 
