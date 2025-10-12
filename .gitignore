@@ -9,3 +9,7 @@ dist/
 
 build/
 .temp/
+
+# Added by cargo
+
+/target

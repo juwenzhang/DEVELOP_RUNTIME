@@ -1,0 +1,39 @@
+name: build and test
+on: [push, pull_request]
+
+jobs:
+  build-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: 构建 Rust 核心与绑定层
+        run: |
+          cargo build --workspace --release
+          cd crates/ast-wasm && wasm-pack build --target web --out-dir ../../packages/ast-browser/wasm
+
+  build-ts:
+    runs-on: ubuntu-latest
+    needs: build-rust
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          package-manager: pnpm
+      - name: 安装依赖并构建 TS 子包
+        run: |
+          pnpm install
+          pnpm run build:ts
+
+  test:
+    runs-on: ubuntu-latest
+    needs: [build-rust, build-ts]
+    steps:
+      - uses: actions/checkout@v4
+      - name: 运行 Rust 测试
+        run: cargo test --workspace
+      - name: 运行 TS 测试
+        run: pnpm -r run test

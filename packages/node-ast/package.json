@@ -1,12 +1,22 @@
 {
-  "name": "node-ast",
+  "name": "@develop_runtime/node-ast",
   "version": "1.0.0",
-  "description": "",
+  "description": "Node.js AST processing library",
+  "displayName": "node-ast",
   "type": "module",
-  "main": "index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "lint:syntax": "pnpm exec tsc --noEmit",
-    "build": "pnpm exec node-gyp configure build",
+    "build:native": "pnpm exec node-gyp configure build",
+    "build:ts": "pnpm exec tsc",
+    "build": "pnpm run build:native && pnpm run build:ts",
     "help": "pnpm exec node-gyp help"
   },
   "keywords": [],

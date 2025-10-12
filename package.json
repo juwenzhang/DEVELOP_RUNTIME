@@ -39,6 +39,7 @@
     "cz-conventional-changelog": "^3.3.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.3",
+    "neon-cli": "^0.10.1",
     "semantic-release": "^24.2.9",
     "shiki-transformers": "link:@rspress/core/shiki-transformers"
   },
