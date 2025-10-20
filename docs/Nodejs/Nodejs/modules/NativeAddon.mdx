@@ -2,6 +2,8 @@
 
 > https://nodejs.org/docs/latest/api/addons.html
 
+> https://nodejs.org/docs/latest/api/n-api.html
+
 ## introduce
 :::note
 
@@ -165,6 +167,216 @@ NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
 
 :::note
 
-* 核心的使用规则是：`NODE_MODULE()
+* 核心的使用规则是：
+    
+    * `NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)`
+
+    ```
+    void Initialize(Local<Object> exports);
+    NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
+    ```
+
+    * context-addon: `NODE_MODULE_INITIALIZER`
+
+    ```
+    using namespace v8;
+
+    extern "C" NODE_MODULE_EXPORT void
+    NODE_MODULE_INITIALIZER(Local<Object> exports,
+                            Local<Value> module,
+                            Local<Context> context) {
+    /* Perform addon initialization steps here. */
+    }
+    ```
 
 :::
+
+## cpp-encrypt-addon
+
+:::note
+
+* 这里就通过一个简单的例子来进行讲解如何进行使用NativeAddons 吧
+
+    * 核心使用的技术栈是：C++ | nodejs | typescript | node-gyp ...
+
+    * 核心实现的是字符串加密的库吧
+
+### first steps: env
+
+* `pnpm init -y`
+
+* `mkdir cpp-encrypt-addon`
+
+* `pnpm add -D typescript @types/node node-gyp`
+
+* `pnpm add node-addon-api`
+
+> `pnpm`: 与 npm 的区别在于「依赖安装方式」—— 采用硬链接 + 符号链接管理依赖，避免重复安装，适合多项目开发
+
+> `node-gyp`: 编译工具，核心功能是「将 C++ 代码转为 Node.js 可识别的二进制模块（.node）」，底层依赖系统编译器（如 Windows 的 MSVC、macOS 的 Clang）
+
+> `node-addon-api`: 封装了 Node.js 的 N-API（C 语言接口），提供 C++ 风格的 API，避免直接写 C 语言代码
+
+### why use cpp??
+
+* 性能优势：编译型语言，直接生成机器码，比 JS（解释型）快 10-100 倍，适合加密等计算密集型任务。
+
+* 系统级交互：可直接调用操作系统 API（如加密库），而 JS 受限于 V8 引擎沙箱。
+
+* STL（标准模板库）：内置数据结构（字符串、容器）和算法，简化加密逻辑实现（类似前端的 Lodash，但更底层）。
+
+### cpp core concept
+
+* 命名空间（namespace）：避免函数名冲突，类似前端的模块化`（如namespace encrypt { ... }）`。
+
+* 引用（&）：传递变量的内存地址，避免拷贝（类似 JS 的对象引用，但类型严格）。
+
+* STL 容器与算法：
+    
+    * `std::string`：动态字符串处理（比 C 语言的 char * 更安全，自动管理内存）。
+    
+    * `std::reverse`：反转字符串（STL 算法，类似 JS 的`split('').reverse().join('')`）。
+    
+    * `std::for_each`：遍历容器（类似 JS 的forEach，但性能更高）。
+
+### configure binding.gyp
+
+```
+{
+  "targets": [
+    {
+      "target_name": "encrypt_addon",  // 生成的.node文件名（最终为encrypt_addon.node）
+      "sources": ["./src/encrypt.cc"],  // C++源文件路径
+
+      // 头文件搜索路径：必须包含node-addon-api的头文件
+      "include_dirs": [
+        "<!@(node -p \"require('node-addon-api').include\")"  // 动态获取路径（跨平台关键）
+      ],
+
+      // 依赖配置：引入node-addon-api的编译规则（处理跨平台兼容）
+      "dependencies": [
+        "<!(node -p \"require('node-addon-api').gyp\")"
+      ],
+
+      // 编译选项：指定C++标准（支持STL特性）
+      "cflags_cc": ["-std=c++17"],  // Linux/macOS：启用C++17
+      "defines": ["NAPI_VERSION=8"],  // N-API版本（8是稳定版，兼容Node.js 14+）
+
+      // 跨平台条件编译（核心！处理不同系统差异）
+      "conditions": [
+        ["OS == 'win'", {  // Windows系统
+          "msvs_settings": {  // Visual Studio编译器配置
+            "VCCLCompilerTool": {
+              "AdditionalOptions": ["/std:c++17"],  // 启用C++17
+              "ExceptionHandling": 1  // 允许异常处理
+            }
+          }
+        }],
+        ["OS == 'mac'", {  // macOS系统
+          "xcode_settings": {  // Xcode编译器配置
+            "CLANG_CXX_LANGUAGE_STANDARD": "c++17"  // 同步C++标准
+          }
+        }]
+      ]
+    }
+  ]
+}
+```
+
+* 最后的编译命令是：`pnpm exec node-gyp configure build`
+
+* Napi 主要是用来进行的是我们的进行 js 的数据类型和 cpp的数据类型进行转换的呐
+
+    * configure：根据当前系统生成编译配置（如 Windows 生成 VS 项目，Linux 生成 Makefile）。
+    
+    * build：调用系统编译器（MSVC/Clang/GCC）编译 C++ 代码，生成build/Release/encrypt_addon.node。
+
+### base dir
+
+    * 一般在我们的`src下进行书写源代码，以及进行后续的操作吧
+
+        * 一般我们的 C++ 的编程包含的有：
+
+            * 源文件为： `.c` `.cpp`
+
+            * 头文件为： `.h` `.hpp`
+
+            * 代码的核心的编排是这些吧
+
+    * 定义配置文件 `binding.gyp`
+
+    * 注意事项
+
+        * 由于在书写 NativeAddon 的时候，我们的核心的步骤是：
+
+            * 1. 获取得到 js 的输入
+
+            * 2. 将 js 数据转化为 cpp 中的数据，此时依赖于我们的 `napi`
+
+            * 3. 在 cpp 中进行对对应的数据进行处理
+
+            * 4. 将 cpp 数据转化为 js 供前端使用
+
+            * 5. 最后设置 exports 进行将处理的方法到处
+
+        * 上面的步骤就说明了这样的使用的话依赖于我们的 commonjs 规范
+
+            * 所以说使用的话需要使用我们的 `require` 函数来实现导入自定义的 `addon`
+
+            * 对于 esmodule 的话此时就需要进行对应的自定义构造得到我们的 require ，这个就是核心的 esmodule 工程化的知识了，哈哈
+
+            ```javascript
+            import { createRequire } from 'module';
+
+            const require = createRequire(import.meta.url);
+
+            const encryptModule = require('../build/Release/encrypt_addon.node');
+            ```
+
+            * 在 typescript 中进行使用的时候就需要进行自定义声明 `dts` 了
+
+            ```typescript
+            declare module 'encrypt_addon.node' {
+                export function encrypt(input: string): string;
+                export function decrypt(input: string): string;
+            }
+            ```
+
+    * 核心的依赖包有
+
+        * 开发环境依赖：
+
+            * `@types/node` nodejs的类型包
+
+            * `typescript` ts的核心包，内部包含有对应的 `tsc` 的打包工具吧
+
+            * `node-gyp` 实现的编译NativaAddon 为 `.node` 文件呐
+
+        * 生产环境依赖
+
+            * `node-addon-api` 核心提供的是 `napi.h` 这样的头文件吧 `js <---> cpp`
+
+    * demo 示例：https://github.com/juwenzhang/cpp_encrypt_addon
+
+    > 官网还有很多很多的工具可以借鉴使用，自行选择最合适的搭配即可，这里呐也没有硬性要求，简单来说 NativeAddons 核心解决的还是跨平台以及性能问题的一个利器吧
+
+    > 1. 实现突破 Javascript 的性能瓶颈
+
+    > 2. 实现 JS 和底层系统/硬件的交互吧
+
+    > 3. 实现复用底层的 C/C++ 生态资源
+
+:::
+
+
+> 相关开源库阅读
+
+> 1. https://github.com/nodejs/nan
+
+> 2. https://github.com/damianociarla/node-ffmpeg
+
+> 3. https://github.com/cmake-js/cmake-js
+
+> 4. https://github.com/nodejs/node-gyp
+
+> 5. https://github.com/nodejs/node-addon-api
