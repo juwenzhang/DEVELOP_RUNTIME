@@ -1,0 +1,32 @@
+[
+    {
+        "type": "file",
+        "name": "fstream",
+        "label": "fstream"
+    },
+    {
+        "type": "file",
+        "name": "exception",
+        "label": "exception"
+    },
+    {
+        "type": "file",
+        "name": "namespace",
+        "label": "namespace"
+    },
+    {
+        "type": "file",
+        "name": "template",
+        "label": "template"
+    },
+    {
+        "type": "file",
+        "name": "signal",
+        "label": "signal"
+    },
+    {
+        "type": "file",
+        "name": "thread",
+        "label": "thread"
+    }
+]

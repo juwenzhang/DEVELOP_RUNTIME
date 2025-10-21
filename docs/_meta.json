@@ -3,5 +3,10 @@
         "text": "Nodejs",
         "link": "/Nodejs/tips",
         "activeMatch": "/Nodejs/tips"
+    },
+    {
+        "text": "Cpp",
+        "link": "/Cpp/tips",
+        "activeMatch": "/Cpp/tips"
     }
 ]

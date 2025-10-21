@@ -1,0 +1,29 @@
+# CPP 常量定义
+
+:::info
+
+* 在 `cpp` 中进行定义常量的方式很多样的，可以通过预处理器 `#define` 实现，也可以通过关键字 `const` 进行定义实现吧
+
+* `#define CONST_NAME CONST_VALUE`
+
+* `const type variable_name = variable_value`
+
+```cpp
+#include <iostream>
+
+// 预处理器定义常量
+#define LENGTH 10
+#define WIDTH 5
+
+int main() {
+    const int LENGTH_1 = 10;
+    const int WIDTH_1 = 5;
+    
+    std::cout << LENGTH * WIDTH << std::endl;
+    std::cout << LENGTH_1 * WIDTH_1 << std::endl;
+
+    return 0;
+}
+```
+
+:::

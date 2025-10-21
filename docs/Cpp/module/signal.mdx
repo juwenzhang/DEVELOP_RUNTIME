@@ -1,0 +1,174 @@
+# Cpp signal 信号
+
+## Basic
+
+:::info
+
+> `csignal`头文件 里的 信号（Signal）机制—— 这是操作系统级别的一种异步通信方式，用于通知进程发生了某种事件（如中断、错误等）。
+
+* 信号是操作系统向进程发送的 事件通知
+
+    * 用户按下 Ctrl+C（SIGINT，中断信号）；
+
+    * 程序执行了非法指令（SIGILL，非法指令信号）；
+
+    * 进程试图访问无效内存（SIGSEGV，段错误信号）。
+
+* 信号的类型
+
+    * SIGINT. 终端中断，也就是平时用的 `ctrl + c`
+
+    * SIGTERM. 终止请求，kill
+
+    * SIGSEGV. 端错误
+
+    * SIGILL. 非法指令
+
+    * SIGABRT. 异常终止吧，abort()
+
+    * SIGALRM. 闹钟信号, alarm()
+
+    * SIGCHLD. 子进程状态变化
+
+* 核心的函数提供吧
+
+    * `signal(int signum, sighandler_t handler)` 注册信号的函数
+
+        * signum 是需要进行注册的信号
+
+        * handler 是信号的处理函数吧
+
+        * 返回值：之前的信号处理函数，出错返回的是 SIG_ERR
+
+    * `raise(int signum)` 当前进程触发指定信号，也就是自己给自己发信号吧
+
+    * `abort()` 触发的是 SIGABRT 信号，进程异常终止吧
+
+:::
+
+:::tip
+
+```cpp
+#include <iostream>
+#include <csignal>
+#include <thread>
+#include <vector>
+#include <mutex>
+#include <atomic>
+#include <unistd.h>
+#include <cstdlib>  // 用于 abort()
+
+// 全局状态：控制线程运行和退出
+std::atomic<bool> g_running{true};       // 线程运行标志
+std::vector<std::thread> g_threads;      // 后台线程列表
+std::mutex g_cout_mutex;                 // 保护cout的互斥锁
+std::atomic<int> g_active_tasks{0};      // 活跃任务数
+
+// 信号处理声明（需全局可见）
+void handle_signal(int signum);
+void register_signals();
+
+// 后台任务函数：模拟周期性工作
+void background_task(int task_id) {
+    g_active_tasks++;
+    while (g_running) {
+        {
+            std::lock_guard<std::mutex> lock(g_cout_mutex);
+            std::cout << "任务 " << task_id << " 正在运行（活跃数：" << g_active_tasks << "）\n";
+        }
+        // 模拟工作（每2秒一次）
+        for (int i = 0; i < 20 && g_running; ++i) {
+            usleep(100000);  // 100ms
+        }
+    }
+    {
+        std::lock_guard<std::mutex> lock(g_cout_mutex);
+        std::cout << "任务 " << task_id << " 已停止\n";
+    }
+    g_active_tasks--;
+}
+
+void graceful_shutdown() {
+    std::lock_guard<std::mutex> lock(g_cout_mutex);
+    std::cout << "\n开始优雅退出...\n";
+    std::cout << "等待所有任务结束（当前活跃：" << g_active_tasks << "）\n";
+
+    g_running = false;
+
+    for (auto& t : g_threads) {
+        if (t.joinable()) {
+            t.join();
+        }
+    }
+
+    std::cout << "所有任务已终止，资源清理完成\n";
+    exit(0);  // 正常退出
+}
+
+void handle_signal(int signum) {
+    std::lock_guard<std::mutex> lock(g_cout_mutex);
+    switch (signum) {
+        case SIGINT:、
+            std::cout << "\n收到 SIGINT 信号（用户中断）\n";
+            graceful_shutdown();
+            break;
+        case SIGTERM:、
+            std::cout << "\n收到 SIGTERM 信号（终止请求）\n";
+            graceful_shutdown();
+            break;
+        case SIGSEGV:、
+            std::cout << "\n收到 SIGSEGV 信号（段错误！程序即将崩溃）\n";
+            // 段错误无法优雅恢复，只能记录错误后强制退出
+            std::cout << "错误信息：非法内存访问，进程将终止\n";
+            exit(1);
+            break;
+        default:
+            std::cout << "\n收到未知信号 " << signum << "\n";
+    }
+}
+
+void register_signals() {
+    if (signal(SIGINT, handle_signal) == SIG_ERR) {
+        std::cerr << "无法注册 SIGINT 处理函数\n";
+    }
+    if (signal(SIGTERM, handle_signal) == SIG_ERR) {
+        std::cerr << "无法注册 SIGTERM 处理函数\n";
+    }
+    if (signal(SIGSEGV, handle_signal) == SIG_ERR) {
+        std::cerr << "无法注册 SIGSEGV 处理函数\n";
+    }
+}
+
+void test_segfault() {
+    std::lock_guard<std::mutex> lock(g_cout_mutex);
+    std::cout << "\n===== 测试：5秒后触发段错误 =====" << std::endl;
+    sleep(5);
+    int* p = nullptr;
+    *p = 100;
+}
+
+int main() {
+    register_signals();
+
+    std::cout << "任务管理器启动（PID：" << getpid() << "）\n";
+    std::cout << "操作说明：\n";
+    std::cout << "  - 按 Ctrl+C 发送 SIGINT 信号（优雅退出）\n";
+    std::cout << "  - 执行 kill " << getpid() << " 发送 SIGTERM 信号（优雅退出）\n";
+    std::cout << "  - 本程序5秒后会自动测试段错误（SIGSEGV）\n\n";
+
+    for (int i = 0; i < 3; ++i) {
+        g_threads.emplace_back(background_task, i);
+    }
+
+    std::thread test_thread(test_segfault);
+    test_thread.detach();
+
+    while (g_running) {
+        sleep(1);
+    }
+
+    return 0;
+}
+```
+
+:::
