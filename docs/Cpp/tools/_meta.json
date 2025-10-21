@@ -1,0 +1,12 @@
+[
+    {
+        "type": "file",
+        "name": "tips",
+        "label": "tips"
+    },
+    {
+        "type": "file",
+        "name": "clang",
+        "label": "clang"
+    }
+]

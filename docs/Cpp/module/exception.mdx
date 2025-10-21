@@ -1,0 +1,86 @@
+# Cpp 异常处理
+
+:::note
+
+## First Step
+* 核心的异常处理的关键字是：`try` `catch` `throw`
+
+    * `try` 块中的代码标识将被激活的特定异常
+
+    * `catch` 在您想要处理问题的地方，通过异常处理程序捕获异常
+
+    * `throw` 当问题出现时，程序会抛出一个异常
+
+```cpp
+try
+{
+   // 保护代码
+}catch( ExceptionName e1 )
+{
+   // catch 块
+}catch( ExceptionName e2 )
+{
+   // catch 块
+}catch( ExceptionName eN )
+{
+   // catch 块
+}
+```
+
+```cpp
+#include<iostream>
+double division(int a, int b) {
+    if (b == 0) {
+        throw "Division by zero condition!"
+    }
+    return (a / b);
+}
+int main() {
+    int x = 50;
+    int y = 60;
+    double z = 0;
+
+    try {
+        z = division(a, b);
+        std::cout << z << std::endl;
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    return 0;
+}
+```
+
+## Normal Exception
+* header file is `<exception>`
+```cpp
+#include <iostream>
+#include <exception>
+using namespace std;
+ 
+struct MyException : public exception
+{
+  const char * what () const throw ()
+  {
+    return "C++ Exception";
+  }
+};
+ 
+int main()
+{
+  try
+  {
+    throw MyException();
+  }
+  catch(MyException& e)
+  {
+    std::cout << "MyException caught" << std::endl;
+    std::cout << e.what() << std::endl;
+  }
+  catch(std::exception& e)
+  {
+    //其他的错误
+  }
+}
+```
+
+:::

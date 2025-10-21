@@ -1,0 +1,21 @@
+# Cpp namespace 命名空间
+
+:::note
+
+```cpp
+namespace namespace_name {
+    // 定义方法或者属性
+    void init() {}
+}
+
+// 使用的时候就是：
+namespace_name::init();
+
+// 1. 一个文件可以有多个命名空间
+// 2. 命名空间是可以进行多层嵌套的
+// 3. 为了实现直接只用命名空间中的代码，我们可以使用 using 关键字来实现吧
+// using namespace namespace_name;
+// 标准库中的一些方法：std 就是一个命名空间吧，using namespace std;
+```
+
+:::

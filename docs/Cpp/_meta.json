@@ -1,0 +1,22 @@
+[
+    {
+        "type": "file",
+        "name": "tips",
+        "label": "tips"
+    },
+    {
+        "type": "dir",
+        "name": "tools",
+        "label": "tools"
+    },
+    {
+        "type": "dir",
+        "name": "basic",
+        "label": "basic"
+    },
+    {
+        "type": "dir",
+        "name": "module",
+        "label": "module"
+    }
+]
