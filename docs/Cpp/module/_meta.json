@@ -28,5 +28,10 @@
         "type": "file",
         "name": "thread",
         "label": "thread"
+    },
+    {
+        "type": "file",
+        "name": "webProgram",
+        "label": "webProgram"
     }
 ]

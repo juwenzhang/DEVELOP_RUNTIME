@@ -1,0 +1,229 @@
+# Node::cluster
+
+:::note
+
+* 核心概念拆解
+
+    * 多进程（`Clusters`）：相当于给 Node.js 开了好几个独立的 “小车间”，每个车间都能单独处理任务，彼此之间基本不干扰。
+
+    * `worker_threads` 模块： 相当于在一个 “大车间” 里，划分出好几个 “小工位”，这些工位共享车间里的资源，不用单独开新车间，适合不需要完全隔离的任务。
+
+* 实际开发中的选择
+
+    * 想让多个任务彻底分开、互不影响，比如处理完全独立的业务逻辑，就用多进程（`Clusters`）。
+
+    * 任务之间需要共享一些数据或资源，不想浪费太多内存开新进程，就用 `worker_threads` 模块。
+
+* 深层思维的考量
+
+    :::info
+
+    ## cluster 深度思考
+
+    * 基本概念总结：
+
+        * 架构思维层面的来说的话，`cluster` 模块核心本质是**基于操作系统进程模型的负载均衡方案**，核心就是`主从架构模式`
+
+        * 从而实现多进程协同，把单进程的性能瓶颈（CPU密集型任务阻塞）转化为多进程并发处理能力，最终提高单体服务器的资源利用率
+
+    * 核心架构模型（`Master-Worker 模型`）
+
+        * Master进程（主进程）：在这里一般不会处理任何的业务逻辑，一般用于的是进行资源的管理分配调度的问题吧
+
+            * 启动 Nodejs 服务的时候会创建一个主进程，作为整个服务的管理者
+
+            * 根据服务器的 CPU 的核心数实现自动化的 fork 复制出对应数量的 worker 进程
+
+            * 设置服务监听的端口(`3000`) ，有新的请求被服务器接受到的时候，此时就会触发底层的 `负载均衡算法`（默认是操作系统的轮训： Round-Robin）进行任务的调度分发吧 
+
+        * Worker进程（工作进程）：仅仅实现的是负责处理对应的业务逻辑吧
+
+            * 每一个 worker 都是独立的 Nodejs 实例，拥有自己的内存管理和事件村换机制吧
+
+            * 接受主进程分配的请求，执行具体的业务逻辑吧（处理API接口，计算数据and so on）
+
+            * 若某个 Worker 进程崩溃，主进程能检测到并自动重启新的 Worker，保证服务稳定性（即 “故障自动恢复”）。
+
+    * 核心价值意义
+
+        * 实现单线程 CPU 瓶颈
+
+            * Node.js 单进程是单线程（主线程处理业务），无法利用多核 CPU。cluster 通过多 Worker 进程，让每个进程占用一个 CPU 核心，实现 “多核并行”，CPU 利用率从 10%-20% 提升到接近 100%
+
+        * 实现服务的负载均衡
+
+            * 所有 Worker 进程共享主进程监听的同一个端口（如 3000），外部请求无需配置额外代理（如 Nginx），就能被主进程自动分发，避免单个 Worker 进程被请求 “压垮”
+
+    ## worker_threads 深度思考
+    | 对比维度   | cluster 模块（多进程）                          | worker_threads 模块（多线程）                  |
+    |------------|-------------------------------------------------|------------------------------------------------|
+    | 资源隔离   | 高（进程间内存不共享，各自有独立 V8 引擎）       | 低（线程共享进程内存，共用一个 V8 引擎）       |
+    | 通信成本   | 高（需通过 IPC 通道，数据需序列化 / 反序列化）   | 低（可通过 SharedArrayBuffer 直接共享内存）    |
+    | 适用场景   | CPU 密集型任务（如大量计算）、服务级高可用       | I/O 密集型任务（如多文件读取）、需共享数据的轻量计算 |
+
+    :::
+
+:::
+
+:::detail
+
+* 很多的元信息来自于 `process` 模块，直接获取即可
+
+```javascript
+const cluster = require('cluster');
+const http = require('http');
+const os = require('os');
+const { performance } = require('perf_hooks');
+const numCPUs = os.cpus().length;
+
+// 配置项
+const config = {
+  port: process.env.PORT || 3000,
+  workerCount: process.env.WORKER_COUNT ? parseInt(process.env.WORKER_COUNT) : numCPUs, // 默认为 CPU 核心数
+  maxMemoryRestart: 500 * 1024 * 1024, // 单个进程内存超过 500MB 自动重启,防止内存泄漏
+  healthCheckInterval: 5000, // 健康检查间隔
+};
+
+// 核心就是我们的主进程负责管理所有的工作进程，包括启动、重启、监控、以及一些事件的处理等
+// 工作进程进行的是定时汇报自己的 CPU 使用率和内存使用量，以及进行处理任务吧
+
+// 主进程逻辑
+if (cluster.isPrimary) {
+  console.log(`[Master] 启动，PID: ${process.pid}，CPU核心数: ${numCPUs}`);
+  console.log(`[Master] 配置：工作进程数=${config.workerCount}，端口=${config.port}`);
+
+  // 存储工作进程信息
+  const workerStats = new Map(); // key: worker.id, value: { cpu, memory, lastActive }
+
+  // 启动工作进程
+  const startWorkers = (count) => {
+    for (let i = 0; i < count; i++) {
+      const worker = cluster.fork(); // 复制主进程，创建工作进程
+      
+      // 记录工作进程初始信息
+      workerStats.set(worker.id, {
+        cpu: 0,
+        memory: 0,
+        lastActive: Date.now(),
+      });
+
+      // 监听工作进程消息
+      worker.on('message', (msg) => {
+        if (msg.type === 'stats') {
+          workerStats.set(worker.id, { ...msg.data, lastActive: Date.now() });
+        }
+      });
+
+      // 2. 工作进程崩溃自动重启
+      worker.on('exit', (code, signal) => {
+        console.error(`[Master] 工作进程 ${worker.id} 退出（code: ${code}, signal: ${signal}），正在重启...`);
+        workerStats.delete(worker.id);
+        startWorkers(1); // 重启一个新的工作进程
+      });
+    }
+  };
+
+  // 初始启动工作进程
+  startWorkers(config.workerCount);
+
+  // 定时健康检查
+  setInterval(() => {
+    const now = Date.now();
+    Object.values(cluster.workers).forEach(worker => {
+      const stats = workerStats.get(worker.id);
+      if (!stats) return;
+
+      if (stats.memory > config.maxMemoryRestart) {
+        console.warn(`[Master] 工作进程 ${worker.id} 内存超限（${stats.memory / 1024 / 1024}MB），强制重启`);
+        worker.kill('SIGTERM');
+        return;
+      }
+
+      // 检查是否长时间无响应
+      if (now - stats.lastActive > 15000) {
+        console.warn(`[Master] 工作进程 ${worker.id} 无响应，强制重启`);
+        worker.kill('SIGTERM');
+      }
+    });
+
+    // 打印当前监控状态  Prometheus/Grafana
+    console.log(`[Master] 监控状态：工作进程数=${Object.keys(cluster.workers).length}`);
+    workerStats.forEach((stats, id) => {
+      console.log(`- 进程 ${id}: CPU=${stats.cpu.toFixed(2)}%，内存=${(stats.memory / 1024 / 1024).toFixed(2)}MB`);
+    });
+  }, config.healthCheckInterval);
+
+  // 支持动态调整工作进程数
+  process.on('SIGUSR2', () => {
+    const currentCount = Object.keys(cluster.workers).length;
+    if (currentCount < numCPUs * 2) { // 限制最大进程数为 CPU核心数*2
+      console.log(`[Master] 收到 SIGUSR2 信号，新增1个工作进程（当前：${currentCount} → ${currentCount + 1}）`);
+      startWorkers(1);
+    }
+  });
+
+  // 主进程优雅退出
+  process.on('SIGTERM', () => {
+    console.log(`[Master] 收到退出信号，开始关闭所有工作进程...`);
+    cluster.workers.forEach(worker => worker.kill('SIGTERM'));
+    setTimeout(() => process.exit(0), 5000);
+  });
+} else {
+  console.log(`[Worker ${cluster.worker.id}] 启动，PID: ${process.pid}`);
+
+  // 创建 HTTP 服务
+  const server = http.createServer(async (req, res) => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      const result = Array.from({ length: 1000 }, (_, i) => i * 2).reduce((a, b) => a + b, 0);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        workerId: cluster.worker.id,
+        pid: process.pid,
+        result,
+        time: new Date().toISOString()
+      }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+
+  server.listen(config.port, () => {
+    console.log(`[Worker ${cluster.worker.id}] 服务启动，监听端口 ${config.port}`);
+  });
+
+  // 定时向主进程发送性能数据
+  setInterval(() => {
+    // 计算 CPU 使用率
+    const cpuUsage = process.cpuUsage();
+    const cpuPercent = ((cpuUsage.user + cpuUsage.system) / (performance.now() * 1000)) * 100;
+    
+    // 内存使用量
+    const memoryUsage = process.memoryUsage().heapUsed;
+
+    // 向主进程发送统计数据
+    process.send({
+      type: 'stats',
+      data: { cpu: cpuPercent, memory: memoryUsage }
+    });
+  }, config.healthCheckInterval);
+
+  // 工作进程优雅退出
+  process.on('SIGTERM', () => {
+    console.log(`[Worker ${cluster.worker.id}] 收到退出信号，停止接收新请求...`);
+    server.close(() => { // 关闭服务，不再接收新请求
+      console.log(`[Worker ${cluster.worker.id}] 所有请求处理完毕，退出`);
+      process.exit(0);
+    });
+
+    // 10秒超时强制退出
+    setTimeout(() => {
+      console.warn(`[Worker ${cluster.worker.id}] 退出超时，强制退出`);
+      process.exit(1);
+    }, 10000);
+  });
+}
+```
+
+::::

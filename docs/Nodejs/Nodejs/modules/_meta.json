@@ -13,5 +13,20 @@
         "type": "file",
         "name": "NativeAddon",
         "label": "NativeAddon"
+    },
+    {
+        "type": "file",
+        "name": "child_process",
+        "label": "child_process"
+    },
+    {
+        "type": "file",
+        "name": "cluster",
+        "label": "cluster"
+    },
+    {
+        "type": "file",
+        "name": "crypto",
+        "label": "crypto"
     }
 ]

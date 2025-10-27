@@ -1,0 +1,13 @@
+# Node::cypto
+
+:::note
+
+* cypto 的核心功能总结的话主要就是使用三大类吧
+
+    * 哈希加密实现，生成数据的唯一（指纹），是一个不可逆的过程吧，用户密码加密存储、文件完整性校验，`createHash('sha256')`
+
+    * 加密解密的实现吧，对数据进行可逆的加密和解密实现吧 `createCipherv/createDecipheriv`
+
+    * 签名和验证实现吧：用私钥签名、公钥验证，确保数据来源和完整性，`createSign/createVerify`，接口签名、数字证书验证
+
+:::
