@@ -1,0 +1,319 @@
+# Nodejs child_process
+
+:::note
+
+* `child_process` 是 Node.js 核心模块，用于创建子进程，实现与系统命令、脚本或其他可执行文件的交互。它允许主进程（Node.js 进程）与子进程并行运行，通过标准输入（stdin）、输出（stdout）、错误输出（stderr）进行通信，或通过 IPC（进程间通信）传递消息。
+
+> 执行系统命令（如 ls、rm、ping 等）。
+
+> 运行其他脚本（如 Python、Shell、另一个 Node.js 脚本）。
+
+> 实现 CPU 密集型任务的并行处理（避免阻塞主进程事件循环）。
+
+:::
+
+:::tip
+
+* 在child_process中常用的一些方法是主要是四个吧
+
+## `child_process.exec(command[, options[, callback]])`
+
+* 特性：执行 shell 命令，缓冲区存储输出结果，完成后通过回调返回。
+
+* 功能
+
+    * 命令通过 shell 解析（支持管道 |、重定向 > 等 shell 语法）。
+    
+    * 输出结果默认缓存在内存中，适合输出量小的场景（默认缓冲区上限 200KB，可通过 maxBuffer 配置）。
+    
+    * 回调参数：(error, stdout, stderr)，分别对应错误、标准输出、错误输出。
+
+* 配置参数
+
+    * `cwd` 子进程的工作目录吧，默认是当前的目录，也就是 `process.cwd`
+
+    * `env` 环境变量，默认是主进程的 `process.env`
+
+    * `shell` 就是指定目前的命令行脚本的执行格式吧
+
+    * `timeout` 就是指定的是当前的脚本指定的超时时间吧
+
+    * `maxBuffer` 缓冲区最大字节数（默认 1024*200），超限时子进程会被杀死并报错。
+
+    * `signal` 是否运行主进程通过 AbortSignal 进行终止
+
+* 回调函数
+
+    * 主要是实现的是我们的进行获取得到执行脚本的时候获得的执行结果信息的 stdout 吧
+
+    * `(error, stdout, stderr) => undefined`
+
+* 返回值
+
+    * 返回的是另一个子进程吧
+
+```javascript
+const { exec } = require('child_process');
+
+const execCmd = exec('ls -l', (error, stdout, stderr) => {
+  if (error) {
+    console.error(`执行错误: ${error.message}`);
+    return;
+  }
+  if (stderr) {
+    console.error(`命令错误: ${stderr}`);
+    return;
+  }
+  console.log(`输出:\n${stdout}`);
+});
+
+console.log(execCmd.stdout)
+```
+
+## `child_process.execFile(file[, args][, options][, callback])`
+
+* 功能：直接执行可执行文件（不通过 shell），性能优于 exec。
+
+* 特性
+
+    * 不支持 shell 语法（如管道、通配符），需手动处理参数。
+
+    * 输出缓冲机制与 exec 一致，适合执行独立可执行文件（如 .exe、python 脚本）。
+
+## `child_process.spawn(command[, args][, options])`
+
+* 创建子进程并流式处理输出（适合大输出量场景，如日志、视频处理）。
+
+* 特性
+
+    * 异步非缓冲，通过 stdout/stderr 的 data 事件实时获取输出。
+
+    * 支持管道（pipe）操作，可将子进程输出转发到主进程或其他流
+
+    * 返回 ChildProcess 对象，可通过事件监听状态（exit、error 等）。
+
+* options 配置
+
+    * stdio：配置标准流（stdin/stdout/stderr）的连接方式（默认 ['pipe', 'pipe', 'pipe']）
+
+        * 'pipe'：通过流传递（默认）。
+
+        * 'inherit'：继承主进程的流（子进程输出直接打印到控制台）。
+
+        * 'ignore'：忽略流。
+
+    * detached：是否让子进程独立于主进程（主进程退出后子进程仍运行，需配合 stdio: 'ignore'）
+
+```javascript
+const { spawn } = require('child_process');
+
+const ping = spawn('ping', ['-c', '4', 'google.com']); // Linux/macOS 语法
+// const ping = spawn('ping', ['-n', '4', 'google.com']); // Windows 语法
+
+ping.stdout.on('data', (data) => {
+  console.log(`输出: ${data}`);
+});
+
+ping.stderr.on('data', (data) => {
+  console.error(`错误: ${data}`);
+});
+
+ping.on('close', (code) => {
+  console.log(`子进程退出，代码: ${code}`);
+});
+```
+
+## `child_process.fork()`
+
+```javascript
+// 主进程 main.js
+const { fork } = require('child_process');
+const child = fork('./child.js');
+
+child.on('message', (msg) => {
+  console.log(`主进程收到: ${msg}`); // 输出 "主进程收到: 子进程完成计算"
+});
+
+child.send({ type: 'calc', data: 100 }); // 发送任务给子进程
+
+// 子进程 child.js
+process.on('message', (msg) => {
+  if (msg.type === 'calc') {
+    const result = msg.data * 2;
+    process.send(`子进程完成计算: ${result}`); // 向主进程发送结果
+    process.exit(); // 完成后退出
+  }
+});
+```
+
+:::
+
+:::info
+
+* 和 stream 模块结合
+
+```javascript
+const { spawn } = require('child_process');
+const fs = require('fs');
+
+// 将 `ls -l` 输出写入文件
+const ls = spawn('ls', ['-l']);
+const output = fs.createWriteStream('ls-output.txt');
+ls.stdout.pipe(output);
+```
+
+* 和 cluster 结合
+
+```javascript
+const cluster = require('cluster');
+const { spawn } = require('child_process');
+const numCPUs = require('os').cpus().length;
+
+if (cluster.isPrimary) {
+  // 主进程：启动工作进程
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+} else {
+  // 工作进程：执行外部命令
+  const worker = spawn('node', ['worker-task.js']);
+  worker.stdout.pipe(process.stdout); // 转发输出到主进程控制台
+}
+```
+
+:::
+
+:::note
+
+### 一、`child_process` 核心底层原理
+1. **进程创建机制**  
+   基于操作系统调用封装：类Unix用`fork()`复制父进程地址空间，Windows用`CreateProcess()`直接加载可执行文件。Node.js通过`ChildProcess`类统一接口，依赖libuv处理异步调度。
+
+2. **进程通信（IPC）本质**  
+   - 标准流（stdin/stdout/stderr）：基于操作系统管道（内核缓冲区），通过文件描述符读写。  
+   - `fork`专用IPC：额外创建匿名管道，通过JSON序列化传递消息（仅支持Node.js子进程）。
+
+
+### 二、与`stream`结合的底层逻辑
+- **子进程输出即流**：`spawn`的`stdout`/`stderr`是`Readable`流，因底层管道数据分块传输，Node.js监听缓冲区触发`data`事件，实现流式处理。  
+- **大输出场景必然性**：`exec`缓存全部输出（易内存溢出），`spawn`流式消费数据（内存占用恒定）。
+
+```javascript
+// 流式压缩日志（底层：分块处理管道数据）
+const { spawn } = require('child_process');
+const fs = require('fs');
+const zlib = require('zlib');
+
+const tail = spawn('tail', ['-f', '/var/log/nginx/access.log']);
+const gzip = zlib.createGzip();
+const output = fs.createWriteStream('access.log.gz');
+
+tail.stdout.pipe(gzip).pipe(output); // 流式传递数据块
+```
+
+
+### 三、核心API底层特性
+| API      | 底层实现                          | 关键特性                                  | 适用场景                          |
+|----------|-----------------------------------|-------------------------------------------|-----------------------------------|
+| `spawn`  | 直接调用系统`execve`/`CreateProcess` | 流式I/O，无shell解析，参数数组防注入      | 大输出、实时交互、性能敏感场景    |
+| `exec`   | `spawn(shell, ['-c', command])`   | shell解析（支持管道/通配符），内存缓存输出 | 短命令、小输出、需shell语法       |
+| `fork`   | `spawn` + 额外IPC管道             | 独立V8引擎，JSON序列化通信                | CPU密集任务、Node.js进程协作      |
+
+**安全示例**：
+```javascript
+// 安全：参数数组避免shell注入
+spawn('rm', ['file; rm -rf /']); // 仅删除名为"file; rm -rf /"的文件
+
+// 危险：直接拼接用户输入
+exec(`rm ${userInput}`); // 若userInput含"; rm -rf /"则执行恶意命令
+```
+
+
+### 四、生产级实战案例
+#### 1. 进程管理（类似PM2核心）
+```javascript
+const { fork } = require('child_process');
+const os = require('os');
+const { createWriteStream } = require('fs');
+const fs = require('fs/promises');
+
+class ProcessManager {
+    constructor(appPath, options = {}) {
+        this.appPath = appPath;
+        this.instances = options.instances || os.cpus().length;
+        this.processes = [];
+        this.logDir = options.logDir || './logs';
+        this.initLogDir().then(() => this.startAll());
+    }
+
+    async initLogDir() {
+        try { await fs.access(this.logDir); } 
+        catch { await fs.mkdir(this.logDir, { recursive: true }); }
+    }
+
+    startProcess() {
+        const logFile = createWriteStream(`${this.logDir}/app-${Date.now()}.log`, { flags: 'a' });
+        const child = fork(this.appPath, [], {
+            stdio: ['ignore', logFile, logFile, 'ipc'], // 日志流式写入
+            env: { ...process.env, NODE_ENV: 'production' },
+            execArgv: ['--max-old-space-size=2048'] // 限制内存
+        });
+
+        child.on('exit', () => { // 崩溃自动重启
+            this.processes = this.processes.filter(p => p.pid !== child.pid);
+            this.startProcess();
+        });
+
+        this.processes.push(child);
+    }
+
+    startAll() { for (let i = 0; i < this.instances; i++) this.startProcess(); }
+    stopAll() { this.processes.forEach(child => child.kill('SIGTERM')); }
+}
+
+// 使用：管理4个应用实例
+const manager = new ProcessManager('./app.js', { instances: 4 });
+process.on('SIGINT', () => { manager.stopAll(); process.exit(0); });
+```
+
+#### 2. 跨语言数据处理（Node.js + Python）
+```javascript
+const { spawn } = require('child_process');
+const { PassThrough } = require('stream');
+
+function processWithPython(inputData, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+        const python = spawn('python3', ['data_processor.py']);
+        let result = Buffer.alloc(0);
+        const timer = setTimeout(() => { python.kill('SIGKILL'); reject(new Error('超时')); }, timeout);
+
+        // 流式输入大文件
+        const inputStream = new PassThrough();
+        inputStream.end(inputData);
+        inputStream.pipe(python.stdin);
+
+        python.stdout.on('data', (chunk) => { result = Buffer.concat([result, chunk]); });
+        python.on('close', (code) => {
+            clearTimeout(timer);
+            code === 0 ? resolve(result) : reject(new Error(`退出码: ${code}`));
+        });
+    });
+}
+
+// 处理100MB CSV
+const fs = require('fs/promises');
+(async () => {
+    const input = await fs.readFile('large.csv');
+    const output = await processWithPython(input);
+    await fs.writeFile('processed.csv', output);
+})();
+```
+
+
+### 五、最佳实践（底层依据）
+1. **优先`spawn`处理大输出**：避免`exec`的`maxBuffer`限制（底层管道缓冲区溢出）。  
+2. **禁止`exec`拼接用户输入**：shell解析特殊字符会导致注入攻击。  
+3. **清理子进程**：通过`child.kill()`发送`SIGTERM`，避免僵尸进程（资源泄漏）。  
+4. **`fork`慎用大数据通信**：JSON序列化会导致内存翻倍，改用文件传输。
+
+:::

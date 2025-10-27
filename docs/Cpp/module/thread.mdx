@@ -1,5 +1,7 @@
 # Cpp Thread 线程 
 
+## 基本概念
+
 :::note
 
 * 线程（thread）
@@ -29,5 +31,257 @@
         * `std::condition_variable` 用于线程间的条件变量，协调线程间的等待和通知
 
         * `std::feature` 和 `std::promise` 用于实现线程间的值传递和任务同步
+
+        ```cpp
+        #include <thread>
+        #include <iostream>
+
+        void task_thread01(int count) {
+            for (int i = 0; i < count; i++) {
+                std::cout << "task_thread01: " << i << std::endl;
+            }
+        }
+
+        int main() {
+            // create thread
+            std::thread t1(task_thread01, 5);  // 传递参数5给线程函数
+
+            t1.join();  // 等待线程执行完毕
+            std::cout << "task_thread01 finished" << std::endl;
+            return 0;
+        }
+        ```
+
+* 运行命令是：`clang++ -std=c++11 -pthread threaddemo.cpp -o threaddemo`
+
+* 核心的使用模版是：
+
+```cpp
+#include<thread>
+std::thread thread_object(callable, args...);
+```
+
+:::
+
+## 线程管理
+
+:::info
+
+* 线程管理
+
+    * `join()` 用于的是等待线程完成执行任务的吧。如果不调用 join() 或 detach() 而直接销毁线程对象，会导致程序崩溃。
+
+    * `detach()` 将线程与主线程分离，线程在后台独立运行，主线程不再等待它。
+
+* 线程调度时候的传值
+
+    * 值传递
+
+    * 引用传递
+
+* 线程互斥和同步
+
+    * 在多线程编程中，线程同步与互斥是两个非常重要的概念，它们用于控制多个线程对共享资源的访问，以避免数据竞争、死锁等问题。
+
+    * 互斥量（Mutex）
+
+        * 互斥量是一种同步原语，用于防止多个线程同时访问共享资源。当一个线程需要访问共享资源时，它首先需要锁定（lock）互斥量。如果互斥量已经被其他线程锁定，那么请求锁定的线程将被阻塞，直到互斥量被解锁（unlock）。
+
+        * 核心使用的是：`std::mutex` 用于实现的是保护共享资源，防止数据之间的竞争吧
+
+        * 使用的步骤是： 1. 创建互斥锁  2. 锁定互斥锁  3. 释放互斥锁
+
+        * 一般是在多线程的环境前后进行加上锁的机制实现一些功能吧
+
+        ```cpp
+        #include <mutex>
+        #include <iostream>
+        #include <thread>
+
+        std::mutex mtx;
+
+        void safeFunction() {
+            mtx.lock();
+
+            std::cout << "线程 " << std::this_thread::get_id() << " 进入临界区" << std::endl;
+
+            mtx.unlock();
+        }
+
+        int main() {
+            std::thread t1(safeFunction);
+            std::thread t2(safeFunction);
+            t1.join();
+            t2.join();
+            return 0;
+        }
+        ```
+    
+    * 锁类型区分
+
+        * `std::lock_guard` 作用域锁，当构造时自动的锁定互斥量吧，当析构时自动解锁
+
+        * `std::unique_lock` 与std::lock_guard类似，但提供了更多的灵活性，例如可以转移所有权和手动解锁
+
+        ```cpp
+        #include<mutex>
+
+        std::mutex mtx;
+
+        void safe_func_with_lock_guard() {
+            std::lock_guard<std::mutex> lk(mtx);
+            // 访问以及修改共享资源
+        }
+
+        void safe_func_with_unique_lock() {
+            std::unique_lock<std::mutex> ul(mtx);
+            // 访问以及修改共享资源
+            // ul.unlock(); 可选的手动释放锁
+        }
+        ```
+
+    * 条件变量
+
+        * `std::condition_variable` 条件变量用于线程间的协调，允许一个或多个线程等待某个条件的发生。它通常与互斥量一起使用，以实现线程间的同步。
+
+        ```cpp
+        #include <mutex>
+        #include <condition_variable>
+
+        std::mutex mtx;
+        std::condition_variable cv;
+        bool ready = false;
+
+        void workerThread() {
+            std::unique_lock<std::mutex> lk(mtx);
+            cv.wait(lk, []{ return ready; }); // 等待条件
+            // 当条件满足时执行工作
+        }
+
+        void mainThread() {
+            {
+                std::lock_guard<std::mutex> lk(mtx);
+                // 准备数据
+                ready = true;
+            } // 离开作用域时解锁
+            cv.notify_one(); // 通知一个等待的线程
+        }
+        ```
+
+    * 原子操作Atomic Operations
+
+        * 原子操作确保对共享数据的访问是不可分割的，即在多线程环境下，原子操作要么完全执行，要么完全不执行，不会出现中间状态。
+
+        ```cpp
+        #include <atomic>
+        #include <thread>
+
+        std::atomic<int> count(0);
+
+        void increment() {
+            count.fetch_add(1, std::memory_order_relaxed);
+        }
+
+        int main() {
+            std::thread t1(increment);
+            std::thread t2(increment);
+            t1.join();
+            t2.join();
+            return count; // 应返回2
+        }
+        ```
+
+    * 线程局部存储（Thread Local Storage, TLS）
+
+        * 线程局部存储允许每个线程拥有自己的数据副本。这可以通过thread_local关键字实现，避免了对共享资源的争用
+
+        ```cpp
+        #include <iostream>
+        #include <thread>
+
+        thread_local int threadData = 0;
+
+        void threadFunction() {
+            threadData = 42; // 每个线程都有自己的threadData副本
+            std::cout << "Thread data: " << threadData << std::endl;
+        }
+
+        int main() {
+            std::thread t1(threadFunction);
+            std::thread t2(threadFunction);
+            t1.join();
+            t2.join();
+            return 0;
+        }
+        ```
+
+:::
+
+## 线程通信
+
+:::tip
+
+* 线程通信
+
+    * `std::future` 和 `std::promise` 实现线程间的值传递实现吧
+
+    * 消息队列就是基于 `std::queue` 和 `std::mutex` 实现简单的线程间通信的呐
+
+    ```cpp
+    std::promise<int> p;
+    std::future<int> f = p.get_future();
+
+    std::thread t([&p] {
+        p.set_value(10); // 设置值，触发 future
+    });
+
+    int result = f.get(); // 获取值
+    ```
+
+:::
+
+## 案例demo
+
+:::details
+
+```cpp
+#include <iostream>
+
+#include <thread>
+
+std::thread::id main_thread_id = std::this_thread::get_id();
+
+void hello()  
+{
+    std::cout << "Hello Concurrent World\n";
+    if (main_thread_id == std::this_thread::get_id())
+        std::cout << "This is the main thread.\n";
+    else
+        std::cout << "This is not the main thread.\n";
+}
+
+void pause_thread(int n) {
+    std::this_thread::sleep_for(std::chrono::seconds(n));
+    std::cout << "pause of " << n << " seconds ended\n";
+}
+
+int main() {
+    std::thread t(hello);
+    std::cout << t.hardware_concurrency() << std::endl;//可以并发执行多少个(不准确)
+    std::cout << "native_handle " << t.native_handle() << std::endl;//可以并发执行多少个(不准确)
+    t.join();
+    std::thread a(hello);
+    a.detach();
+    std::thread threads[5];                         // 默认构造线程
+
+    std::cout << "Spawning 5 threads...\n";
+    for (int i = 0; i < 5; ++i)
+        threads[i] = std::thread(pause_thread, i + 1);   // move-assign threads
+    std::cout << "Done spawning threads. Now waiting for them to join:\n";
+    for (auto &thread : threads)
+        thread.join();
+    std::cout << "All threads joined!\n";
+}
+```
 
 :::
