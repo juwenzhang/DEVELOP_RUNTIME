@@ -1,0 +1,294 @@
+# Electron BasicPractice
+
+:::info
+
+1. 基本要求
+
+2. 创建第一个应用
+
+3. 使用预加载脚本
+
+4. 添加功能
+
+5. 打包
+
+6. 发布更新实现
+
+:::
+
+## 初见Electron
+
+:::note
+
+### 核心流程
+
+* 初始化
+
+    * `npm init`
+
+* 安装必须的依赖
+
+    * `npm install electron -D`
+
+* 配置package.json
+
+    * `scripts.start: electron .`
+
+    * `main: main.js|ts` 指定程序的入口脚本吧
+
+    * 测试运行，在我们的命令行终端中就会出现对应的打印输出吧 `npm run start`
+
+* 页面的显示
+
+    * 在Electron中每个窗口都是一个独立的页面，页面都是本地的 HTML 吧，或者说来自于远程的 URL 地址
+
+    * 在Electron中的话页面的加载一般是加载到的是我们的 `BrowserWindow` 中的呐
+
+    * 您应用中的每个页面都在一个单独的进程中运行，我们称这些进程为 渲染器 (renderer) 
+
+    ```html 
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta
+        http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'"
+        />
+        <meta
+        http-equiv="X-Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'"
+        />
+        <title>first electron app</title>
+    </head>
+    <body>
+        <h1>hello electron</h1>
+        <div id="app"></div>
+    </body>
+    </html>
+    ```
+
+    ```javascript 
+    /**
+    * 导入核心需要的模块
+    * 1. app 控制着整个应用的生命周期吧
+    * 2. BrowserWindow 用于创建和管理应用的窗口
+    * typescript 中使用 `const { app, BrowserWindow } = require('electron/main')`
+    */
+
+    // Electron 的许多核心模块都是 Node.js 的事件触发器，遵循 Node.js 的异步事件驱动架构。 app 模块就是其中一个
+
+    const { app, BrowserWindow } = require('electron')
+
+    const createWindow = () => {
+        const win = new BrowserWindow({
+            // 初始化设置的窗口大小
+            width: 800,
+            height: 600,
+        })
+
+        // 指定加载的默认页面吧
+        win.loadFile('index.html')
+    }
+
+    app.whenReady().then(() => {
+        createWindow()
+    })    
+    ```
+
+    * 可以简单理解为的是我们的 electron 就是本地的一个开发容器吧，提供了本地的一个浏览器的功能而已吧
+
+### 窗口的生命周期
+
+> 在上面的描述中我们的整个生命周期的管理和应用都是来自于我们的 `app` 所以说生命周期的话也是在这里面进行管理的呐
+
+> 首先注意一点的是我们的 electron 是一个跨平台的开发框架架构，所以说在很多时候需要手动进行解决我们的程序之间的差异性吧
+
+> 此时尤其核心注意的点，核心后续积累哪些行为在不同的操作系统上表现会有差异，这个是需要核心关注的点吧
+
+> electron只支持三种平台的代码：`win32(windows)` `liunx` `darwin(macos)`
+
+* 开始生命周期
+
+    :::info
+
+    * 生命周期一：`window-all-closed`
+
+        * 需求是关闭一个应用的所有窗口后让程序退出：`window-all-closed`
+
+        * `app.quit()` 执行程序退出吧
+
+        * 但是这里注意的是 macos 的行为就具备一个差异性，程序的所有窗口关闭了，程序还是没有退出的呐
+
+        * `process.platform` 获取平台信息
+
+    ```javascript
+    app.on("window-all-closed", () => {
+        if (process.platform !== 'darwin') {
+            app.quit();
+        }
+    })
+    ```
+
+    * 同时我们我们还可以实现的是没有窗口打开直接打开信息的 macos 窗口的特性实现吧，核心是为了针对我们的 macos 系统的呐
+
+    * 但是这个事件必须在窗口打开后才可以实现监听吧
+
+    ```javascript
+    app.whenReady().then(() => {
+        createWindow()
+
+        // 核心是针对我们的 macos 表现出来的行为的弥补的一个操作吧
+        // 因为 macos 的操作是没有窗口的时候应用程序也是没有关闭的
+        app.on('activate', () => {
+            if (BrowserWindow.getAllWindows().length === 0) {
+                createWindow()
+            }
+        })
+    })
+    ```
+
+    :::
+
+:::
+
+## 预加载脚本
+
+:::note
+
+### 理解预加载脚本
+
+* Electron 的主进程是一个拥有着完全操作系统访问权限的 Node.js 环境
+
+* 另一方面，出于安全原因，渲染进程默认跑在网页页面上，而并非 Node.js里
+
+* 为了将 Electron 的不同类型的进程桥接在一起，我们需要使用被称为 `预加载` 的特殊脚本
+
+### 预加载脚本增强渲染器 contextBridge
+
+* Electron 20 开始预加载脚本默认`沙盒化`，不在拥有完整的 Nodejs 环境的访问权
+
+* 这意味着你只拥有一个 `polyfilled` 的 require 函数，这个函数只能访问一组有限的 API
+
+* 这个预加载脚本的话一般出现在的是我们的 `preload.js` 中，利用的是 `contextBridge`
+
+```javascript
+const { app, BrowserWindow } = require('electron/main')
+const path = require('node:path')
+
+const createWindow = () => {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
+
+  win.loadFile('index.html')
+}
+
+app.whenReady().then(() => {
+  createWindow()
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
+    }
+  })
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+```
+```javascript
+const { contextBridge } = require('electron')
+
+contextBridge.exposeInMainWorld('versions', {
+    node: () => process.versions.node(),
+    chrome: () => process.versions.chrome(),
+    electron: () => process.versions.electron(),
+})
+
+const information = document.getElementById('info')
+information.innerText = `本应用正在使用 Chrome (v${versions.chrome()}), Node.js (v${versions.node()}), 和 Electron (v${versions.electron()})`
+```
+
+### 进程间通信 ipcRenderer
+
+* Electron 的主进程和渲染进程有着清楚的分工并且不可互换
+
+* 这代表着无论是从渲染进程直接访问 Node.js 接口，亦或者是从主进程访问 HTML 文档对象模型 (DOM)，都是不可能的
+
+* 进程间通信 (IPC)。可以使用 Electron 的 ipcMain 模块和 ipcRenderer 模块来进行进程间通信。 为了从你的网页向主进程发送消息，你可以使用 ipcMain.handle 设置一个主进程处理程序（handler），然后在预处理脚本中暴露一个被称为 ipcRenderer.invoke 的函数来触发该处理程序（handler）
+
+### 核心书写的话包含的有
+
+* `main.js` 主要是管理的是主进程：`app` `BrowserWindow` `ipcMain` 等使用
+
+* `preload.js` 核心是预加载脚本吧 `contextBridge` `ipcRenderer`
+
+* `renderer.js` 核心就是书写我们的每个页面单独的处理函数吧，事件的定义而已
+
+:::
+
+## 打包应用程序
+
+:::note
+
+* 使用我们的 electorn forge 进行打包即可
+
+    *  @electron/packager、 @electron/osx-sign、electron-winstaller 等
+
+    * `npm install --save-dev @electron-forge/cli`
+
+    * `npx electron-forge import`
+
+    ```json
+    {
+    "name": "first-electron",
+    "version": "1.0.0",
+    "description": "",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron-forge start",
+        "package": "electron-forge package",
+        "make": "electron-forge make"
+    },
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "@electron-forge/cli": "^7.10.2",
+        "@electron-forge/maker-deb": "^7.10.2",
+        "@electron-forge/maker-rpm": "^7.10.2",
+        "@electron-forge/maker-squirrel": "^7.10.2",
+        "@electron-forge/maker-zip": "^7.10.2",
+        "@electron-forge/plugin-auto-unpack-natives": "^7.10.2",
+        "@electron-forge/plugin-fuses": "^7.10.2",
+        "@electron/fuses": "^1.8.0",
+        "electron": "^39.0.0"
+    },
+    "dependencies": {
+        "electron-squirrel-startup": "^1.0.1"
+    }
+    }
+    ```
+
+    * 同时也会多一个 `forge.config.js`: 在预填充的配置中看到多个makers（生成可分发应用程序包的包），每个目标平台一个
+
+    * 创建可分发版本：`npm run make`
+
+:::
+
+## 发布更新
+
+:::note
+
+* `npm install --save-dev @electron-forge/publisher-github`
+
+* `npm install update-electron-app`
+
+:::
