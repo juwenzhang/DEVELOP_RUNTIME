@@ -6,8 +6,8 @@
     },
     {
         "type": "dir",
-        "name": "messagechannel",
-        "label": "messagechannel"
+        "name": "messageChannel",
+        "label": "messageChannel"
     },
     {
         "type": "dir",
