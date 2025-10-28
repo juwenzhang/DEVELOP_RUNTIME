@@ -1,0 +1,37 @@
+[
+    {
+        "type": "dir",
+        "name": "react",
+        "label": "react"
+    },
+    {
+        "type": "dir",
+        "name": "vue",
+        "label": "vue"
+    },
+    {
+        "type": "dir",
+        "name": "svelte",
+        "label": "svelte"
+    },
+    {
+        "type": "dir",
+        "name": "solid",
+        "label": "solid"
+    },
+    {
+        "type": "dir",
+        "name": "nextjs",
+        "label": "nextjs"
+    },
+    {
+        "type": "dir",
+        "name": "nuxtjs",
+        "label": "nuxtjs"
+    },
+    {
+        "type": "dir",
+        "name": "remix",
+        "label": "remix"
+    }
+]

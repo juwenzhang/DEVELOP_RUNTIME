@@ -1,0 +1,22 @@
+[
+    {
+        "type": "dir",
+        "name": "electron",
+        "label": "electron"
+    },
+    {
+        "type": "dir",
+        "name": "qt",
+        "label": "qt"
+    },
+    {
+        "type": "dir",
+        "name": "tarui",
+        "label": "tarui"
+    },
+    {
+        "type": "dir",
+        "name": "dioxus",
+        "label": "dioxus"
+    }
+]
