@@ -41,8 +41,8 @@
     },
     {
         "type": "dir",
-        "name": "webWorker",
-        "label": "webWorker"
+        "name": "webworker",
+        "label": "webworker"
     },
     {
         "type": "dir",
