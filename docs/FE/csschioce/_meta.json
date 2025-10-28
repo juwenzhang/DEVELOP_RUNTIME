@@ -1,0 +1,32 @@
+[
+    {
+        "type": "dir",
+        "name": "cssmodules",
+        "label": "cssmodules"
+    },
+    {
+        "type": "dir",
+        "name": "styled-components",
+        "label": "styled-components"
+    },
+    {
+        "type": "dir",
+        "name": "emotions",
+        "label": "emotions"
+    },
+    {
+        "type": "dir",
+        "name": "tailwindcss",
+        "label": "tailwindcss"
+    },
+    {
+        "type": "dir",
+        "name": "unocss",
+        "label": "unocss"
+    },
+    {
+        "type": "dir",
+        "name": "lessSass",
+        "label": "lessSass"
+    }
+]

@@ -290,9 +290,9 @@ class NodeAstMdParser {
         
         while (i < lines.length && lines[i] && RegExpMapper.QUOTE.test(lines[i]!.trim())) {
             if (lines[i]) {
-                  const lineContent = lines[i]!.replace(RegExpMapper.QUOTE, '').trim();
-                  content += (content ? '\n' : '') + lineContent;
-              }
+                const lineContent = lines[i]!.replace(RegExpMapper.QUOTE, '').trim();
+                content += (content ? '\n' : '') + lineContent;
+            }
             i++;
         }
         
