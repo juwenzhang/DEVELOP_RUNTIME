@@ -5,8 +5,18 @@
         "activeMatch": "/Nodejs/tips"
     },
     {
+        "text": "FE",
+        "link": "/FE/tips",
+        "activeMatch": "/FE/tips"
+    },
+    {
         "text": "Cpp",
         "link": "/Cpp/tips",
         "activeMatch": "/Cpp/tips"
+    },
+    {
+        "text": "daily Life",
+        "link": "/dailylife",
+        "activeMatch": "/dailylife"
     }
 ]

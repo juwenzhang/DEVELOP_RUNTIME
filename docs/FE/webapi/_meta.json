@@ -1,0 +1,82 @@
+[
+    {
+        "type": "dir",
+        "name": "canvas",
+        "label": "canvas"
+    },
+    {
+        "type": "dir",
+        "name": "messageChannel",
+        "label": "messageChannel"
+    },
+    {
+        "type": "dir",
+        "name": "clipboard",
+        "label": "clipboard"
+    },
+    {
+        "type": "dir",
+        "name": "navigator",
+        "label": "navigator"
+    },
+    {
+        "type": "dir",
+        "name": "fullScreen",
+        "label": "fullScreen"
+    },
+    {
+        "type": "dir",
+        "name": "file",
+        "label": "file"
+    },
+    {
+        "type": "dir",
+        "name": "encode",
+        "label": "encode"
+    },
+    {
+        "type": "dir",
+        "name": "webGPU",
+        "label": "webGPU"
+    },
+    {
+        "type": "dir",
+        "name": "webWorker",
+        "label": "webWorker"
+    },
+    {
+        "type": "dir",
+        "name": "webGL",
+        "label": "webGL"
+    },
+    {
+        "type": "dir",
+        "name": "webcrypto",
+        "label": "webcrypto"
+    },
+    {
+        "type": "dir",
+        "name": "webcodecs",
+        "label": "webcodecs"
+    },
+    {
+        "type": "dir",
+        "name": "webcomponent",
+        "label": "webcomponent"
+    },
+    {
+        "type": "dir",
+        "name": "webRTC",
+        "label": "webRTC"
+    },
+    {
+        "type": "dir",
+        "name": "webVTT",
+        "label": "webVTT"
+    },
+    {
+        "type": "dir",
+        "name": "websocket",
+        "label": "websocket"
+    }
+]

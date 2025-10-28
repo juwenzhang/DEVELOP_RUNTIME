@@ -1,0 +1,42 @@
+[
+    {
+        "type": "file",
+        "name": "tips",
+        "label": "tips"
+    },
+    {
+        "type": "dir",
+        "name": "framework",
+        "label": "framework"
+    },
+    {
+        "type": "dir",
+        "name": "multiplatform",
+        "label": "multiplatform"
+    },
+    {
+        "type": "dir",
+        "name": "desktop",
+        "label": "desktop"
+    },
+    {
+        "type": "dir",
+        "name": "microfe",
+        "label": "microfe"
+    },
+    {
+        "type": "dir",
+        "name": "webapi",
+        "label": "webapi"
+    },
+    {
+        "type": "dir",
+        "name": "csschioce",
+        "label": "csschioce"
+    },
+    {
+        "type": "dir",
+        "name": "feEngineer",
+        "label": "feEngineer"
+    }
+]

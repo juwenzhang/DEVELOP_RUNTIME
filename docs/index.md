@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: Quick Start
-      link: /introduce/
+      link: /FE/tips
     - theme: alt
       text: GitHub
       link: https://github.com/juwenzhang/develop_runtime
@@ -16,23 +16,28 @@ hero:
     src: https://rspress.rs/rspress-logo.webp
     alt: Logo
 features:
-  - title: Nodejs Practice
+  - title: Nodejs 后端实践思考
     details: 记录一些 nodejs 的基础知识，包括事件循环、异步编程、模块系统、HTTP 服务器等，主要是express，koa，fastify，nestjs 等等
     link: /Nodejs/tips
     icon: 🏃🏻‍♀️
-  - title: Support for MDX content writing
-    details: MDX is a powerful way to write content, allowing you to use React components in Markdown.
+  - title: 前端开发框架
+    details: 核心包含了常见的web开发框架以及一些常用的跨端实现架构以及微前端架构等等吧，以及一些常见的业务类型的思考
+    link: /FE/tips
     icon: 📦
-  - title: Built-in full-text search
-    details: Automatically generates a full-text search index for you during construction, providing out-of-the-box full-text search capabilities.
+  - title: Rust 技术栈持续探索
+    details: 记录一些 rust 相关的技术栈的思考，包括但不限于 rust 语言本身，以及一些常用的 rust 库，以及一些 rust 相关的项目思考等等
     icon: 🎨
-  - title: Simpler I18n solution
-    details: With the built-in I18n solution, you can easily provide multi-language support for documents or components.
+  - title: Go 微服务实践思考
+    details: 记录一些 go 微服务的实践思考，包括但不限于 go 语言本身，以及一些常用的 go 库，以及一些 go 微服务的项目思考等等
     icon: 🌍
-  - title: Static site generation
-    details: In production, it automatically builds into static HTML files, which can be easily deployed anywhere.
+  - title: daily Life 日常生活思考
+    details: 记录一些日常的思考，包括但不限于工作生活、学习思考、生活记录吧，纪念生活，哈哈
+    link: /dailylife
     icon: 🌈
-  - title: Providing multiple custom capabilities
-    details: Through its extension mechanism, you can easily extend theme UI and build process.
+  - title: Python 开发实践思考
+    details: 记录一些 python 开发的实践思考，包括但不限于 python 语言本身，以及一些常用的 python 库，以及一些 python 项目的思考等等
     icon: 🔥
+  - title: cpp 开发实践思考
+    details: 记录一些 cpp 开发的实践思考，包括但不限于 cpp 语言本身，以及一些常用的 cpp 库，以及一些 cpp 项目的思考等等
+    icon: 🚀
 ---

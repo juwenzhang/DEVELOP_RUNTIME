@@ -1,0 +1,37 @@
+[
+    {
+        "type": "dir",
+        "name": "reactnative",
+        "label": "reactnative"
+    },
+    {
+        "type": "dir",
+        "name": "lynx",
+        "label": "lynx"
+    },
+    {
+        "type": "dir",
+        "name": "flutter",
+        "label": "flutter"
+    },
+    {
+        "type": "dir",
+        "name": "san",
+        "label": "san"
+    },
+    {
+        "type": "dir",
+        "name": "nativejs",
+        "label": "nativejs"
+    },
+    {
+        "type": "dir",
+        "name": "taro",
+        "label": "taro"
+    },
+    {
+        "type": "dir",
+        "name": "uniapp",
+        "label": "uniapp"
+    }
+]
