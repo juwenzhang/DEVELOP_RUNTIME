@@ -1,0 +1,27 @@
+[
+    {
+        "type": "file",
+        "name": "model",
+        "label": "model"
+    },
+    {
+        "type": "file",
+        "name": "context",
+        "label": "context"
+    },
+    {
+        "type": "file",
+        "name": "ipc",
+        "label": "ipc"
+    },
+    {
+        "type": "file",
+        "name": "sandbox",
+        "label": "sandbox"
+    },
+    {
+        "type": "file",
+        "name": "MessageChannel",
+        "label": "MessageChannel"
+    }
+]

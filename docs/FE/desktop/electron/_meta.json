@@ -1,7 +1,17 @@
 [
     {
+        "type": "file",
+        "name": "tips",
+        "label": "tips"
+    },
+    {
         "type": "dir",
         "name": "quickstart",
         "label": "quickstart"
+    },
+    {
+        "type": "dir",
+        "name": "flowchart",
+        "label": "flowchart"
     }
 ]
