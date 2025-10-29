@@ -1,0 +1,103 @@
+* Flow Model
+
+:::note
+
+* electron 继承来自于 Chormium 的多进程架构模型.
+
+## 为什么会是多进程架构模型呐？
+
+* 浏览器本身的话是是一个单进程的架构模型，通过标签页实现的承载一个应用，此时好的是一个标签页的开销是十分少的，但是一个网站内存崩溃，导致一个进程直接无响应
+
+* 就是因为这样的问题存在，所以说才后续实现了我们的多进程架构的模型，让每个页面单独由一个进程进行管理
+
+## 主进程
+
+* 每个 Electron 应用都有一个单一的主进程，作为应用程序的入口点。 主进程在 Node.js 环境中运行，这意味着它具有 require 模块和使用所有 Node.js API 的能力。
+
+    :::info
+
+    ### 窗口管理
+
+    * 在主进程中主要是实现的是和我们的 `Nodejs` 进行实现管理吧，所以说是可以直接使用 polyfill 的呐！
+
+    * `BrowserWindow` 模块实现创建和管理应用的程序窗口吧，基于我们的 `EventEmitter` 来实现的呐
+
+    ### 生命周期管理
+
+    * 核心是通过我们的 `app` 来进行的是指定我们的生命周期管理的吧
+
+    :::
+
+## 渲染器进程
+
+* 每个 Electron 应用都会为打开的 BrowserWindow 生成单独的渲染器进程，渲染器进程核心是用于进行的是渲染网页内容
+
+## preload 脚本
+
+* 预加载（preload）脚本包含了那些执行于渲染器进程中，且先于网页内容开始加载的代码 。 这些脚本虽运行于渲染器的环境中，却因能访问 Node.js API 而拥有了更多的权限。
+
+    * 直接在createWindow里面进行回调实现吧，内部指定 `webPreferences`
+
+* 因为预加载脚本与浏览器共享同一个全局 Window 接口，并且可以访问 Node.js API，所以它通过在全局 window 中暴露任意 API 来增强渲染器，以便你的网页内容使用。
+
+    * 尽管预加载脚本与其所附着的渲染器在共享着同一个全局 window 对象，但您并不能从中直接附加任何变量到 window 之上，因为 contextIsolation 是默认的。
+
+    * 此时核心需要的就是在预加载脚本通过 `contenxtBridge` 进行暴露
+
+:::
+
+
+:::details
+
+* 总结
+
+    :::tip
+
+    * electron 开发核心的准备点
+
+        * 一个主进程：main.js
+            
+            * `app` 实现在主进程中管理整个应用的生命周期的呐
+
+            * `BrowserWindow` 实现的是窗口的管理，同时实现开放一些权限给外部的呐
+
+        * 一个 preload 
+
+            * 这个会在创建出窗口前进行执行
+
+            * 核心就是增强的事渲染器的能力的吧，负载了 nodejs 端的使用，以及前端 windows 对象的操作
+
+            * 最后需要在我们的 main.js 中指定 webInference
+
+        * 一个是我们的 rerender
+
+            * 页面中核心处理的业务路径吧
+
+        * index.html
+
+            * 核心的渲染页面吧
+
+        ```javascript
+        // 在上下文隔离启用的情况下使用预加载
+        const { contextBridge } = require('electron')
+
+        contextBridge.exposeInMainWorld('myAPI', {
+            loadPreferences: () => ipcRenderer.invoke('load-prefs')
+        })
+        ```
+
+        ```typescript
+        export interface IElectronAPI {
+            loadPreferences: () => Promise<void>,
+        }
+
+        declare global {
+            interface Window {
+                electronAPI: IElectronAPI
+            }
+        }
+        ```
+
+    :::
+
+:::

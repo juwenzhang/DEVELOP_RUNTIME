@@ -1,0 +1,24 @@
+# Context
+
+* 核心是解决的是预加载脚本的问题吧，在这个里面存在一定的上下文隔离的特点存在吧
+
+```javascript
+// 在上下文隔离启用的情况下使用预加载
+const { contextBridge } = require('electron')
+
+contextBridge.exposeInMainWorld('myAPI', {
+    loadPreferences: () => ipcRenderer.invoke('load-prefs')
+})
+```
+
+```typescript
+export interface IElectronAPI {
+    loadPreferences: () => Promise<void>,
+}
+
+declare global {
+    interface Window {
+        electronAPI: IElectronAPI
+    }
+}
+```
